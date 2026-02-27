@@ -58,5 +58,39 @@
   "notificationList": [
     { "_id": "notif_1", "_creationTime": 1704067200000, "name": "Manager Alert", "whatsAppPhoneNumber": "+1987654321" },
     { "_id": "notif_2", "_creationTime": 1704067200000, "name": "Stock Alert", "whatsAppPhoneNumber": "+1987654322" }
-  ]
+  ],
+  "users": [
+    { "_id": "user_1", "_creationTime": 1704067200000, "name": "Admin User", "email": "admin@erp.com", "password": "admin123", "isActive": true },
+    { "_id": "user_2", "_creationTime": 1704067200000, "name": "Jane Manager", "email": "manager@erp.com", "password": "manager123", "isActive": true },
+    { "_id": "user_3", "_creationTime": 1704067200000, "name": "John Shop Manager", "email": "shopmanager@erp.com", "password": "shop123", "isActive": true },
+    { "_id": "user_4", "_creationTime": 1704067200000, "name": "Sarah Cashier", "email": "cashier@erp.com", "password": "cashier123", "isActive": true }
+  ],
+  "userRoles": [
+    { "_id": "role_1", "userId": "user_1", "role": "super_admin" },
+    { "_id": "role_2", "userId": "user_2", "role": "manager" },
+    { "_id": "role_3", "userId": "user_3", "role": "shop_manager" },
+    { "_id": "role_4", "userId": "user_4", "role": "app_user" }
+  ],
+  "userShopAssignments": [
+    { "_id": "assign_1", "userId": "user_3", "shopId": "shop_1" },
+    { "_id": "assign_2", "userId": "user_4", "shopId": "shop_1" }
+  ],
+  "permissions": [
+    { "_id": "perm_1", "userId": "user_3", "permission": "create_product", "shopId": "shop_1" },
+    { "_id": "perm_2", "userId": "user_3", "permission": "edit_product", "shopId": "shop_1" },
+    { "_id": "perm_3", "userId": "user_3", "permission": "sell", "shopId": "shop_1" },
+    { "_id": "perm_4", "userId": "user_3", "permission": "manage_clients", "shopId": "shop_1" },
+    { "_id": "perm_5", "userId": "user_3", "permission": "create_client", "shopId": "shop_1" },
+    { "_id": "perm_6", "userId": "user_3", "permission": "view_sales", "shopId": "shop_1" },
+    { "_id": "perm_7", "userId": "user_3", "permission": "view_products", "shopId": "shop_1" },
+    { "_id": "perm_8", "userId": "user_3", "permission": "view_clients", "shopId": "shop_1" },
+    { "_id": "perm_9", "userId": "user_3", "permission": "manage_stock", "shopId": "shop_1" },
+    { "_id": "perm_10", "userId": "user_3", "permission": "view_dashboard", "shopId": "shop_1" },
+    { "_id": "perm_11", "userId": "user_4", "permission": "sell", "shopId": "shop_1" },
+    { "_id": "perm_12", "userId": "user_4", "permission": "view_products", "shopId": "shop_1" },
+    { "_id": "perm_13", "userId": "user_4", "permission": "view_sales", "shopId": "shop_1" },
+    { "_id": "perm_14", "userId": "user_4", "permission": "view_clients", "shopId": "shop_1" },
+    { "_id": "perm_15", "userId": "user_4", "permission": "view_dashboard", "shopId": "shop_1" }
+  ],
+  "auditLogs": []
 }

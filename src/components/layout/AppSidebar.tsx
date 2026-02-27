@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard,
   Store,
@@ -25,32 +26,60 @@ import {
   Tag,
   Layers,
   CreditCard,
+  Shield,
+  FileText,
 } from "lucide-react";
-
-const mainNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Shops", url: "/shops", icon: Store },
-  { title: "Point of Sale", url: "/pos", icon: CreditCard },
-];
-
-const inventoryNavItems = [
-  { title: "Categories", url: "/categories", icon: Tag },
-  { title: "Product Templates", url: "/templates", icon: Layers },
-  { title: "Products", url: "/products", icon: Package },
-];
-
-const managementNavItems = [
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "Sales History", url: "/sales", icon: ShoppingCart },
-  { title: "Notifications", url: "/notifications", icon: Bell },
-];
 
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { getUserRole, hasPermission, getUserShopIds } = useAuth();
+  const role = getUserRole();
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Build nav items based on role
+  const mainNavItems: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[] = [];
+  
+  // Dashboard - everyone gets it
+  mainNavItems.push({ title: "Dashboard", url: "/", icon: LayoutDashboard });
+  
+  // Shops
+  if (role === 'super_admin' || role === 'manager') {
+    mainNavItems.push({ title: "Shops", url: "/shops", icon: Store });
+  }
+
+  // POS - shop_manager, app_user with sell, or super_admin
+  if (role === 'super_admin' || hasPermission('sell')) {
+    mainNavItems.push({ title: "Point of Sale", url: "/pos", icon: CreditCard });
+  }
+
+  const inventoryNavItems: typeof mainNavItems = [];
+  if (role === 'super_admin' || role === 'manager') {
+    inventoryNavItems.push({ title: "Categories", url: "/categories", icon: Tag });
+    inventoryNavItems.push({ title: "Product Templates", url: "/templates", icon: Layers });
+  }
+  if (role === 'super_admin' || role === 'manager' || hasPermission('view_products')) {
+    inventoryNavItems.push({ title: "Products", url: "/products", icon: Package });
+  }
+
+  const managementNavItems: typeof mainNavItems = [];
+  if (role === 'super_admin' || role === 'manager' || hasPermission('view_clients')) {
+    managementNavItems.push({ title: "Clients", url: "/clients", icon: Users });
+  }
+  if (role === 'super_admin' || role === 'manager' || hasPermission('view_sales')) {
+    managementNavItems.push({ title: "Sales History", url: "/sales", icon: ShoppingCart });
+  }
+  if (role === 'super_admin' || (role === 'manager' && hasPermission('manage_notifications'))) {
+    managementNavItems.push({ title: "Notifications", url: "/notifications", icon: Bell });
+  }
+
+  const adminNavItems: typeof mainNavItems = [];
+  if (role === 'super_admin') {
+    adminNavItems.push({ title: "User Management", url: "/users", icon: Shield });
+    adminNavItems.push({ title: "Audit Logs", url: "/audit-logs", icon: FileText });
+  }
 
   const NavItem = ({ item }: { item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> } }) => (
     <SidebarMenuItem>
@@ -101,31 +130,50 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60">
-            {!collapsed && "Inventory"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {inventoryNavItems.map((item) => (
-                <NavItem key={item.url} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {inventoryNavItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/60">
+              {!collapsed && "Inventory"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {inventoryNavItems.map((item) => (
+                  <NavItem key={item.url} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60">
-            {!collapsed && "Management"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {managementNavItems.map((item) => (
-                <NavItem key={item.url} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {managementNavItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/60">
+              {!collapsed && "Management"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {managementNavItems.map((item) => (
+                  <NavItem key={item.url} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {adminNavItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/60">
+              {!collapsed && "Administration"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminNavItems.map((item) => (
+                  <NavItem key={item.url} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4">

@@ -8,21 +8,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getShops, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice, getProductsSoldByShop } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, User, Receipt, ArrowRight, Printer } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer } from "lucide-react";
 import type { Product, ProductTemplate, ProductCategory, Client, CartItem, SaleSummary } from "@/types";
 import { cn } from "@/lib/utils";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { cashierLoginSchema, CashierLoginFormData } from "@/lib/schemas";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 export default function POSPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const shopId = searchParams.get("shop");
-  const shops = getShops();
-  const [cashierName, setCashierName] = React.useState<string | null>(null);
+  const { currentUser, hasRole, hasPermission, getUserShopIds, isShopAccessible } = useAuth();
+
+  const allShops = getShops();
+  const role = hasRole('super_admin') ? 'super_admin' : hasRole('manager') ? 'manager' : null;
+  const userShopIds = getUserShopIds();
+  const accessibleShops = role === 'super_admin' || role === 'manager'
+    ? allShops
+    : allShops.filter(s => userShopIds.includes(s._id));
+
+  // Auto-select shop for shop_manager/app_user with single shop
+  const shopIdParam = searchParams.get("shop");
+  const shopId = shopIdParam || (accessibleShops.length === 1 ? accessibleShops[0]._id : null);
+
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedClient, setSelectedClient] = React.useState<Client | null>(null);
@@ -30,13 +37,16 @@ export default function POSPage() {
   const [showReceipt, setShowReceipt] = React.useState(false);
   const [currentSale, setCurrentSale] = React.useState<SaleSummary | null>(null);
 
-  const shop = shops.find(s => s._id === shopId);
+  const shop = allShops.find(s => s._id === shopId);
   const products = shopId ? getProductsByShop(shopId) : [];
   const templates = getProductTemplates();
   const categories = getProductCategories();
   const clients = shopId ? getClientsByShop(shopId) : [];
 
-  const form = useForm<CashierLoginFormData>({ resolver: zodResolver(cashierLoginSchema), defaultValues: { name: "" } });
+  const cashierName = currentUser?.name || "Unknown";
+
+  // Check sell permission
+  const canSell = hasRole('super_admin') || hasPermission('sell', shopId || undefined);
 
   if (!shopId) {
     return (
@@ -46,7 +56,7 @@ export default function POSPage() {
           <CardContent>
             <Select onValueChange={(val) => navigate(`/pos?shop=${val}`)}>
               <SelectTrigger><SelectValue placeholder="Choose a shop..." /></SelectTrigger>
-              <SelectContent>{shops.map(s => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{accessibleShops.map(s => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </CardContent>
         </Card>
@@ -54,24 +64,8 @@ export default function POSPage() {
     );
   }
 
-  if (!cashierName) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md">
-          <CardHeader><CardTitle>Cashier Login</CardTitle></CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => setCashierName(data.name))} className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Your Name</FormLabel><FormControl><Input placeholder="Enter your name" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="submit" className="w-full">Start Shift</Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (!canSell) {
+    return <div className="p-8 text-center text-muted-foreground">You don't have permission to sell at this shop.</div>;
   }
 
   const getProductInfo = (product: Product) => {
@@ -90,9 +84,11 @@ export default function POSPage() {
   });
 
   const filteredProducts = sortedProducts.filter(p => {
-    const { template, category } = getProductInfo(p);
+    const { template, category, price } = getProductInfo(p);
     const query = searchQuery.toLowerCase();
-    return template?.name.toLowerCase().includes(query) || category?.name.toLowerCase().includes(query);
+    return template?.name.toLowerCase().includes(query) ||
+      category?.name.toLowerCase().includes(query) ||
+      formatPrice(price).toLowerCase().includes(query);
   });
 
   const addToCart = (product: Product) => {
@@ -113,10 +109,10 @@ export default function POSPage() {
   const completeSale = () => {
     cart.forEach(item => {
       for (let i = 0; i < item.quantity; i++) {
-        createProductSold({ name: item.template.name, productId: item.product._id, shopId: shopId!, priceInCents: item.priceInCents, cashierBogusName: cashierName!, clientId: selectedClient?._id });
+        createProductSold({ name: item.template.name, productId: item.product._id, shopId: shopId!, priceInCents: item.priceInCents, cashierBogusName: cashierName, clientId: selectedClient?._id });
       }
     });
-    const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName: cashierName!, shopId: shopId!, timestamp: Date.now() };
+    const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName, shopId: shopId!, timestamp: Date.now() };
     setCurrentSale(sale);
     setLastSale(sale);
     setShowReceipt(true);
@@ -137,7 +133,7 @@ export default function POSPage() {
         <div className="flex items-center gap-4 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+            <Input placeholder="Search by name, category, or price..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
           </div>
           <Badge variant="secondary">{shop?.name}</Badge>
           <Badge variant="outline">{cashierName}</Badge>
@@ -149,7 +145,10 @@ export default function POSPage() {
               const { template, category, price } = getProductInfo(product);
               const isOutOfStock = product.quantity <= 0;
               return (
-                <div key={product._id} onClick={() => addToCart(product)} className={cn("border-r border-b p-3 cursor-pointer hover:bg-muted/50 transition-colors aspect-square flex flex-col justify-between", isOutOfStock && "bg-destructive/10")}>
+                <div key={product._id} onClick={() => addToCart(product)} className={cn(
+                  "border-r border-b p-3 cursor-pointer hover:bg-muted/50 transition-colors aspect-square flex flex-col justify-between",
+                  isOutOfStock && "bg-destructive/10 hover:bg-destructive/15"
+                )}>
                   <div>
                     <p className="font-medium text-sm line-clamp-2">{template?.name}</p>
                     <p className="text-xs text-muted-foreground">{category?.name}</p>
@@ -186,6 +185,7 @@ export default function POSPage() {
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-auto space-y-2">
+          {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Tap products to add to cart</p>}
           {cart.map(item => (
             <div key={item.product._id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
               <div className="flex-1 min-w-0">
@@ -202,6 +202,10 @@ export default function POSPage() {
           ))}
         </CardContent>
         <div className="p-4 border-t">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-muted-foreground">{cart.reduce((s, c) => s + c.quantity, 0)} items</span>
+            <Button variant="outline" size="sm" onClick={() => setCart([])} disabled={cart.length === 0}>Clear</Button>
+          </div>
           <div className="flex items-center justify-between mb-4">
             <span className="text-lg font-bold">Total</span>
             <span className="text-2xl font-bold">{formatPrice(cartTotal)}</span>
