@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 234 80% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 234 80% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 234 80% 16%;
+
+    --primary: 1 91% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 234 80% 16%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 234 20% 95%;
+    --muted-foreground: 234 20% 40%;
+
+    --accent: 234 80% 16%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 234 20% 90%;
+    --input: 234 20% 90%;
+    --ring: 1 91% 46%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 234 80% 16%;
+    --sidebar-foreground: 234 10% 90%;
+    --sidebar-primary: 1 91% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 234 60% 22%;
+    --sidebar-accent-foreground: 234 10% 90%;
+    --sidebar-border: 234 60% 25%;
+    --sidebar-ring: 1 91% 46%;
+
+    --chart-1: 1 91% 46%;
+    --chart-2: 234 80% 16%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 262 83% 58%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(1 91% 46%) 0%, hsl(1 91% 36%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(234 80% 16%) 0%, hsl(234 80% 26%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(1 91% 46%) 0%, hsl(234 80% 16%) 100%);
+  }
+
+  .dark {
+    --background: 234 80% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 234 60% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 234 60% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 1 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 234 40% 25%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 234 40% 18%;
+    --muted-foreground: 234 15% 60%;
+
+    --accent: 1 91% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 234 40% 20%;
+    --input: 234 40% 20%;
+    --ring: 1 91% 50%;
+
+    --sidebar-background: 234 80% 6%;
+    --sidebar-foreground: 234 10% 85%;
+    --sidebar-primary: 1 91% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 234 60% 15%;
+    --sidebar-accent-foreground: 234 10% 85%;
+    --sidebar-border: 234 60% 18%;
+    --sidebar-ring: 1 91% 50%;
+
+    --chart-1: 1 91% 55%;
+    --chart-2: 234 60% 50%;
+    --chart-3: 142 76% 50%;
+    --chart-4: 38 92% 60%;
+    --chart-5: 262 83% 65%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(1 91% 50%) 0%, hsl(1 91% 40%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(234 60% 20%) 0%, hsl(234 60% 30%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(1 91% 50%) 0%, hsl(234 60% 30%) 100%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background: var(--gradient-accent);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Print styles for receipts */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .receipt {
+    width: 80mm !important;
+    padding: 5mm !important;
+    font-size: 12px !important;
+  }
+}

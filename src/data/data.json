@@ -1,0 +1,62 @@
+{
+  "productCategories": [
+    { "_id": "cat_1", "_creationTime": 1704067200000, "name": "Beverages", "code": "BEV" },
+    { "_id": "cat_2", "_creationTime": 1704067200000, "name": "Snacks", "code": "SNK" },
+    { "_id": "cat_3", "_creationTime": 1704067200000, "name": "Electronics", "code": "ELE" },
+    { "_id": "cat_4", "_creationTime": 1704067200000, "name": "Clothing", "code": "CLO" },
+    { "_id": "cat_5", "_creationTime": 1704067200000, "name": "Home & Garden", "code": "HMG" }
+  ],
+  "productTemplates": [
+    { "_id": "temp_1", "_creationTime": 1704067200000, "productCategoryId": "cat_1", "name": "Cola 500ml", "code": "COLA500", "priceInCents": 250 },
+    { "_id": "temp_2", "_creationTime": 1704067200000, "productCategoryId": "cat_1", "name": "Orange Juice 1L", "code": "OJ1L", "priceInCents": 450 },
+    { "_id": "temp_3", "_creationTime": 1704067200000, "productCategoryId": "cat_1", "name": "Mineral Water 500ml", "code": "WATER500", "priceInCents": 150 },
+    { "_id": "temp_4", "_creationTime": 1704067200000, "productCategoryId": "cat_2", "name": "Potato Chips Classic", "code": "CHIPS1", "priceInCents": 350 },
+    { "_id": "temp_5", "_creationTime": 1704067200000, "productCategoryId": "cat_2", "name": "Chocolate Bar", "code": "CHOCO1", "priceInCents": 200 },
+    { "_id": "temp_6", "_creationTime": 1704067200000, "productCategoryId": "cat_2", "name": "Mixed Nuts 200g", "code": "NUTS200", "priceInCents": 650 },
+    { "_id": "temp_7", "_creationTime": 1704067200000, "productCategoryId": "cat_3", "name": "USB Cable Type-C", "code": "USBC1", "priceInCents": 1500 },
+    { "_id": "temp_8", "_creationTime": 1704067200000, "productCategoryId": "cat_3", "name": "Wireless Mouse", "code": "MOUSE1", "priceInCents": 2500 },
+    { "_id": "temp_9", "_creationTime": 1704067200000, "productCategoryId": "cat_4", "name": "Basic T-Shirt", "code": "TSHIRT1", "priceInCents": 1500 },
+    { "_id": "temp_10", "_creationTime": 1704067200000, "productCategoryId": "cat_5", "name": "Plant Pot Medium", "code": "POT1", "priceInCents": 800 }
+  ],
+  "shops": [
+    { "_id": "shop_1", "_creationTime": 1704067200000, "name": "Downtown Store", "description": "Main downtown location with high foot traffic" },
+    { "_id": "shop_2", "_creationTime": 1704067200000, "name": "Mall Kiosk", "description": "Shopping mall kiosk near food court" },
+    { "_id": "shop_3", "_creationTime": 1704067200000, "name": "Airport Terminal", "description": "24/7 airport convenience store" }
+  ],
+  "products": [
+    { "_id": "prod_1", "_creationTime": 1704067200000, "productTemplateId": "temp_1", "shopId": "shop_1", "quantity": 50, "useDefaultPrice": true },
+    { "_id": "prod_2", "_creationTime": 1704067200000, "productTemplateId": "temp_2", "shopId": "shop_1", "quantity": 30, "useDefaultPrice": true },
+    { "_id": "prod_3", "_creationTime": 1704067200000, "productTemplateId": "temp_3", "shopId": "shop_1", "quantity": 0, "useDefaultPrice": true },
+    { "_id": "prod_4", "_creationTime": 1704067200000, "productTemplateId": "temp_4", "shopId": "shop_1", "quantity": 25, "useDefaultPrice": false, "priceInCentsAtShop": 400 },
+    { "_id": "prod_5", "_creationTime": 1704067200000, "productTemplateId": "temp_5", "shopId": "shop_1", "quantity": -5, "useDefaultPrice": true },
+    { "_id": "prod_6", "_creationTime": 1704067200000, "productTemplateId": "temp_1", "shopId": "shop_2", "quantity": 100, "useDefaultPrice": true },
+    { "_id": "prod_7", "_creationTime": 1704067200000, "productTemplateId": "temp_4", "shopId": "shop_2", "quantity": 40, "useDefaultPrice": true },
+    { "_id": "prod_8", "_creationTime": 1704067200000, "productTemplateId": "temp_7", "shopId": "shop_2", "quantity": 15, "useDefaultPrice": false, "priceInCentsAtShop": 1800 },
+    { "_id": "prod_9", "_creationTime": 1704067200000, "productTemplateId": "temp_1", "shopId": "shop_3", "quantity": 200, "useDefaultPrice": false, "priceInCentsAtShop": 350 },
+    { "_id": "prod_10", "_creationTime": 1704067200000, "productTemplateId": "temp_3", "shopId": "shop_3", "quantity": 150, "useDefaultPrice": false, "priceInCentsAtShop": 200 },
+    { "_id": "prod_11", "_creationTime": 1704067200000, "productTemplateId": "temp_6", "shopId": "shop_1", "quantity": 3, "useDefaultPrice": true },
+    { "_id": "prod_12", "_creationTime": 1704067200000, "productTemplateId": "temp_8", "shopId": "shop_2", "quantity": 8, "useDefaultPrice": true }
+  ],
+  "productsSold": [
+    { "_id": "sold_1", "_creationTime": 1706659200000, "name": "Cola 500ml", "productId": "prod_1", "shopId": "shop_1", "priceInCents": 250, "cashierBogusName": "John", "clientId": "client_1" },
+    { "_id": "sold_2", "_creationTime": 1706659200000, "name": "Potato Chips Classic", "productId": "prod_4", "shopId": "shop_1", "priceInCents": 400, "cashierBogusName": "John", "clientId": "client_1" },
+    { "_id": "sold_3", "_creationTime": 1706745600000, "name": "Cola 500ml", "productId": "prod_6", "shopId": "shop_2", "priceInCents": 250, "cashierBogusName": "Sarah" },
+    { "_id": "sold_4", "_creationTime": 1706745600000, "name": "USB Cable Type-C", "productId": "prod_8", "shopId": "shop_2", "priceInCents": 1800, "cashierBogusName": "Sarah", "clientId": "client_3" },
+    { "_id": "sold_5", "_creationTime": 1706832000000, "name": "Cola 500ml", "productId": "prod_9", "shopId": "shop_3", "priceInCents": 350, "cashierBogusName": "Mike" },
+    { "_id": "sold_6", "_creationTime": 1706832000000, "name": "Mineral Water 500ml", "productId": "prod_10", "shopId": "shop_3", "priceInCents": 200, "cashierBogusName": "Mike" },
+    { "_id": "sold_7", "_creationTime": 1706918400000, "name": "Orange Juice 1L", "productId": "prod_2", "shopId": "shop_1", "priceInCents": 450, "cashierBogusName": "John", "clientId": "client_2" },
+    { "_id": "sold_8", "_creationTime": 1706918400000, "name": "Chocolate Bar", "productId": "prod_5", "shopId": "shop_1", "priceInCents": 200, "cashierBogusName": "John" },
+    { "_id": "sold_9", "_creationTime": 1707004800000, "name": "Wireless Mouse", "productId": "prod_12", "shopId": "shop_2", "priceInCents": 2500, "cashierBogusName": "Sarah", "clientId": "client_3" },
+    { "_id": "sold_10", "_creationTime": 1707004800000, "name": "Potato Chips Classic", "productId": "prod_7", "shopId": "shop_2", "priceInCents": 350, "cashierBogusName": "Sarah" }
+  ],
+  "clients": [
+    { "_id": "client_1", "_creationTime": 1704067200000, "name": "Alice Johnson", "phoneNumber": "+1234567890", "shopId": "shop_1" },
+    { "_id": "client_2", "_creationTime": 1704067200000, "name": "Bob Smith", "phoneNumber": "+1234567891", "shopId": "shop_1" },
+    { "_id": "client_3", "_creationTime": 1704067200000, "name": "Carol Williams", "phoneNumber": "+1234567892", "shopId": "shop_2" },
+    { "_id": "client_4", "_creationTime": 1704067200000, "name": "David Brown", "phoneNumber": "+1234567893", "shopId": "shop_3" }
+  ],
+  "notificationList": [
+    { "_id": "notif_1", "_creationTime": 1704067200000, "name": "Manager Alert", "whatsAppPhoneNumber": "+1987654321" },
+    { "_id": "notif_2", "_creationTime": 1704067200000, "name": "Stock Alert", "whatsAppPhoneNumber": "+1987654322" }
+  ]
+}
