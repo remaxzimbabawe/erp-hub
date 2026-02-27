@@ -11,14 +11,11 @@ import { notificationSchema, NotificationFormData } from "@/lib/schemas";
 import { getNotificationList, createNotification, deleteNotification } from "@/lib/database";
 import type { NotificationList } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 function NotificationForm({ onSubmit }: { onSubmit: (data: NotificationFormData) => void }) {
-  const form = useForm<NotificationFormData>({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: { name: "", whatsAppPhoneNumber: "" },
-  });
-
+  const form = useForm<NotificationFormData>({ resolver: zodResolver(notificationSchema), defaultValues: { name: "", whatsAppPhoneNumber: "" } });
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -36,6 +33,9 @@ function NotificationForm({ onSubmit }: { onSubmit: (data: NotificationFormData)
 
 export default function NotificationsPage() {
   const { toast } = useToast();
+  const { hasRole, hasPermission } = useAuth();
+  const isSuperAdmin = hasRole('super_admin');
+  const canManage = isSuperAdmin || hasPermission('manage_notifications');
   const [notifications, setNotifications] = React.useState<NotificationList[]>(getNotificationList());
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [deleteItem, setDeleteItem] = React.useState<NotificationList | null>(null);
@@ -44,22 +44,16 @@ export default function NotificationsPage() {
 
   const handleCreate = (data: NotificationFormData) => {
     createNotification({ name: data.name, whatsAppPhoneNumber: data.whatsAppPhoneNumber });
-    refreshData();
-    setIsCreateOpen(false);
-    toast({ title: "Contact added" });
+    refreshData(); setIsCreateOpen(false); toast({ title: "Contact added" });
   };
-
   const handleDelete = () => {
     if (!deleteItem) return;
-    deleteNotification(deleteItem._id);
-    refreshData();
-    setDeleteItem(null);
-    toast({ title: "Contact removed" });
+    deleteNotification(deleteItem._id); refreshData(); setDeleteItem(null); toast({ title: "Contact removed" });
   };
 
   const columns = [
-    { key: "name", header: "Name" },
-    { key: "whatsAppPhoneNumber", header: "WhatsApp", render: (item: NotificationList) => (
+    { key: "name" as const, header: "Name" },
+    { key: "whatsAppPhoneNumber" as const, header: "WhatsApp", render: (item: NotificationList) => (
       <div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground" />{item.whatsAppPhoneNumber}</div>
     )},
   ];
@@ -67,9 +61,12 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader title="Notification Contacts" description="Manage WhatsApp notification recipients">
-        <Button onClick={() => setIsCreateOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>
+        {canManage && <Button onClick={() => setIsCreateOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>}
       </PageHeader>
-      <DataView data={notifications} columns={columns} keyExtractor={(item) => item._id} searchKeys={["name"]} onDelete={(item) => setDeleteItem(item)} emptyMessage="No contacts added." />
+      <DataView data={notifications} columns={columns} keyExtractor={(item) => item._id} searchKeys={["name"]}
+        onDelete={canManage ? (item) => setDeleteItem(item) : undefined}
+        emptyMessage="No contacts added."
+      />
       <ModalForm open={isCreateOpen} onOpenChange={setIsCreateOpen} title="Add Contact"><NotificationForm onSubmit={handleCreate} /></ModalForm>
       <ConfirmModal open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)} title="Remove Contact" description={`Remove "${deleteItem?.name}"?`} onConfirm={handleDelete} confirmLabel="Remove" variant="destructive" />
     </div>

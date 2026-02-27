@@ -1,3 +1,59 @@
+export type RoleType = 'super_admin' | 'manager' | 'shop_manager' | 'app_user';
+
+export type PermissionKey =
+  | 'create_product'
+  | 'edit_product'
+  | 'delete_product'
+  | 'sell'
+  | 'manage_clients'
+  | 'create_client'
+  | 'delete_client'
+  | 'view_sales'
+  | 'view_products'
+  | 'view_clients'
+  | 'manage_stock'
+  | 'view_dashboard'
+  | 'manage_notifications';
+
+export type User = {
+  _id: string;
+  _creationTime: number;
+  name: string;
+  email: string;
+  password: string;
+  isActive: boolean;
+};
+
+export type UserRole = {
+  _id: string;
+  userId: string;
+  role: RoleType;
+};
+
+export type UserShopAssignment = {
+  _id: string;
+  userId: string;
+  shopId: string;
+};
+
+export type Permission = {
+  _id: string;
+  userId: string;
+  permission: PermissionKey;
+  shopId?: string;
+};
+
+export type AuditLog = {
+  _id: string;
+  _creationTime: number;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  changes: { field: string; from: unknown; to: unknown }[];
+  description: string;
+};
+
 export type ProductCategory = {
   _id: string;
   _creationTime: number;
@@ -65,6 +121,11 @@ export interface Database {
   productsSold: ProductSold[];
   clients: Client[];
   notificationList: NotificationList[];
+  users: User[];
+  userRoles: UserRole[];
+  userShopAssignments: UserShopAssignment[];
+  permissions: Permission[];
+  auditLogs: AuditLog[];
 }
 
 // Cart item for POS
