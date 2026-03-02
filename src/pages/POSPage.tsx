@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getShops, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice, getProductsSoldByShop } from "@/lib/database";
+import { getShops, getProducts, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice, getProductsSoldByShop } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch } from "lucide-react";
 import type { Product, ProductTemplate, ProductCategory, Client, CartItem, SaleSummary } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,8 @@ export default function POSPage() {
   const [lastSale, setLastSale] = React.useState<SaleSummary | null>(null);
   const [showReceipt, setShowReceipt] = React.useState(false);
   const [currentSale, setCurrentSale] = React.useState<SaleSummary | null>(null);
-
+  const [showProductSearch, setShowProductSearch] = React.useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = React.useState("");
   const shop = allShops.find(s => s._id === shopId);
   const products = shopId ? getProductsByShop(shopId) : [];
   const templates = getProductTemplates();
@@ -137,6 +139,9 @@ export default function POSPage() {
           </div>
           <Badge variant="secondary">{shop?.name}</Badge>
           <Badge variant="outline">{cashierName}</Badge>
+          <Button variant="outline" size="sm" onClick={() => { setShowProductSearch(true); setGlobalSearchQuery(""); }}>
+            <PackageSearch className="h-4 w-4 mr-2" />Find Stock
+          </Button>
         </div>
 
         <div className="flex-1 overflow-auto border rounded-lg">
@@ -215,6 +220,63 @@ export default function POSPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Global Product Search Dialog */}
+      <Dialog open={showProductSearch} onOpenChange={setShowProductSearch}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader><DialogTitle>Find Product Across All Shops</DialogTitle></DialogHeader>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by product name, category..." value={globalSearchQuery} onChange={(e) => setGlobalSearchQuery(e.target.value)} className="pl-9" autoFocus />
+          </div>
+          <div className="overflow-auto max-h-[50vh]">
+            {(() => {
+              const allProducts = getProducts();
+              const allShops = getShops();
+              const query = globalSearchQuery.toLowerCase().trim();
+              if (!query) return <p className="text-sm text-muted-foreground text-center py-4">Type to search for products...</p>;
+              const results = allProducts.filter(p => {
+                const tmpl = templates.find(t => t._id === p.productTemplateId);
+                const cat = tmpl ? categories.find(c => c._id === tmpl.productCategoryId) : null;
+                return tmpl?.name.toLowerCase().includes(query) || cat?.name.toLowerCase().includes(query);
+              });
+              if (results.length === 0) return <p className="text-sm text-muted-foreground text-center py-4">No products found.</p>;
+              return (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Shop</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.map(p => {
+                      const tmpl = templates.find(t => t._id === p.productTemplateId);
+                      const cat = tmpl ? categories.find(c => c._id === tmpl.productCategoryId) : null;
+                      const shopInfo = allShops.find(s => s._id === p.shopId);
+                      const price = p.useDefaultPrice ? tmpl?.priceInCents || 0 : p.priceInCentsAtShop || 0;
+                      return (
+                        <TableRow key={p._id}>
+                          <TableCell className="font-medium">{tmpl?.name}</TableCell>
+                          <TableCell>{cat?.name}</TableCell>
+                          <TableCell><Badge variant="secondary">{shopInfo?.name}</Badge></TableCell>
+                          <TableCell className="text-right">{formatPrice(price)}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={p.quantity <= 0 ? "destructive" : p.quantity <= 5 ? "outline" : "secondary"}>{p.quantity}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Receipt Modal */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
