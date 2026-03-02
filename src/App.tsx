@@ -17,6 +17,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import POSPage from "./pages/POSPage";
 import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import StockPage from "./pages/StockPage";
 import NotFound from "./pages/NotFound";
 import { setCurrentAuditUser } from "@/lib/database";
 import * as React from "react";
@@ -47,7 +48,8 @@ function AuthenticatedApp() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/pos" element={<POSPage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/audit-logs" element={<AuditLogsPage />} />
+         <Route path="/audit-logs" element={<AuditLogsPage />} />
+         <Route path="/stock" element={<StockPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

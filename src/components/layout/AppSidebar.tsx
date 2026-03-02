@@ -28,6 +28,7 @@ import {
   CreditCard,
   Shield,
   FileText,
+  BarChart3,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -62,6 +63,7 @@ export function AppSidebar() {
   }
   if (role === 'super_admin' || role === 'manager' || hasPermission('view_products')) {
     inventoryNavItems.push({ title: "Products", url: "/products", icon: Package });
+    inventoryNavItems.push({ title: "Stock Overview", url: "/stock", icon: BarChart3 });
   }
 
   const managementNavItems: typeof mainNavItems = [];
