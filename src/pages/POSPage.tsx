@@ -178,9 +178,9 @@ export default function POSPage() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Cart</CardTitle>
-            <Select value={selectedClient?._id || ""} onValueChange={(val) => setSelectedClient(clients.find(c => c._id === val) || null)}>
+            <Select value={selectedClient?._id || "walk-in"} onValueChange={(val) => setSelectedClient(val === "walk-in" ? null : clients.find(c => c._id === val) || null)}>
               <SelectTrigger className="w-40"><User className="h-3 w-3 mr-2" /><SelectValue placeholder="Walk-in" /></SelectTrigger>
-              <SelectContent><SelectItem value="">Walk-in</SelectItem>{clients.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent><SelectItem value="walk-in">Walk-in</SelectItem>{clients.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </CardHeader>
