@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getShops, getProducts, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice, getProductsSoldByShop } from "@/lib/database";
+import { getShops, getProducts, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch } from "lucide-react";
+import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch, ShoppingCart } from "lucide-react";
 import type { Product, ProductTemplate, ProductCategory, Client, CartItem, SaleSummary } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,6 @@ export default function POSPage() {
     ? allShops
     : allShops.filter(s => userShopIds.includes(s._id));
 
-  // Auto-select shop for shop_manager/app_user with single shop
   const shopIdParam = searchParams.get("shop");
   const shopId = shopIdParam || (accessibleShops.length === 1 ? accessibleShops[0]._id : null);
 
@@ -46,8 +45,6 @@ export default function POSPage() {
   const clients = shopId ? getClientsByShop(shopId) : [];
 
   const cashierName = currentUser?.name || "Unknown";
-
-  // Check sell permission
   const canSell = hasRole('super_admin') || hasPermission('sell', shopId || undefined);
 
   if (!shopId) {
@@ -93,17 +90,47 @@ export default function POSPage() {
       formatPrice(price).toLowerCase().includes(query);
   });
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, sourceShopName?: string) => {
     const { template, category, price } = getProductInfo(product);
     setCart(prev => {
-      const existing = prev.find(c => c.product._id === product._id);
-      if (existing) return prev.map(c => c.product._id === product._id ? { ...c, quantity: c.quantity + 1 } : c);
-      return [...prev, { product, template, category, quantity: 1, priceInCents: price }];
+      const cartKey = `${product._id}_${sourceShopName || ''}`;
+      const existing = prev.find(c => `${c.product._id}_${c.sourceShopName || ''}` === cartKey);
+      if (existing) return prev.map(c => `${c.product._id}_${c.sourceShopName || ''}` === cartKey ? { ...c, quantity: c.quantity + 1 } : c);
+      return [...prev, { product, template, category, quantity: 1, priceInCents: price, sourceShopName }];
     });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev => prev.map(c => c.product._id === productId ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c).filter(c => c.quantity > 0));
+  const addCrossShopToCart = (remoteProduct: Product, remoteShopName: string) => {
+    const template = templates.find(t => t._id === remoteProduct.productTemplateId)!;
+    const category = categories.find(c => c._id === template?.productCategoryId)!;
+    
+    // Get price from the remote shop
+    const remotePrice = remoteProduct.useDefaultPrice ? template?.priceInCents || 0 : remoteProduct.priceInCentsAtShop || 0;
+    
+    // Get price from the current shop (if exists)
+    const localProduct = products.find(p => p.productTemplateId === remoteProduct.productTemplateId);
+    let localPrice = 0;
+    if (localProduct) {
+      localPrice = localProduct.useDefaultPrice ? template?.priceInCents || 0 : localProduct.priceInCentsAtShop || 0;
+    }
+    
+    // Use the highest price between the two shops
+    const salePrice = Math.max(remotePrice, localPrice);
+    
+    setCart(prev => {
+      const cartKey = `${remoteProduct._id}_${remoteShopName}`;
+      const existing = prev.find(c => `${c.product._id}_${c.sourceShopName || ''}` === cartKey);
+      if (existing) return prev.map(c => `${c.product._id}_${c.sourceShopName || ''}` === cartKey ? { ...c, quantity: c.quantity + 1 } : c);
+      return [...prev, { product: remoteProduct, template, category, quantity: 1, priceInCents: salePrice, sourceShopName: remoteShopName }];
+    });
+    
+    toast({ title: "Added from " + remoteShopName, description: `${template.name} at ${formatPrice(salePrice)}` });
+    setShowProductSearch(false);
+  };
+
+  const updateQuantity = (productId: string, sourceShopName: string | undefined, delta: number) => {
+    const cartKey = `${productId}_${sourceShopName || ''}`;
+    setCart(prev => prev.map(c => `${c.product._id}_${c.sourceShopName || ''}` === cartKey ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c).filter(c => c.quantity > 0));
   };
 
   const cartTotal = cart.reduce((sum, c) => sum + c.priceInCents * c.quantity, 0);
@@ -111,7 +138,15 @@ export default function POSPage() {
   const completeSale = () => {
     cart.forEach(item => {
       for (let i = 0; i < item.quantity; i++) {
-        createProductSold({ name: item.template.name, productId: item.product._id, shopId: shopId!, priceInCents: item.priceInCents, cashierBogusName: cashierName, clientId: selectedClient?._id });
+        createProductSold({
+          name: item.template.name,
+          productId: item.product._id,
+          shopId: shopId!,
+          priceInCents: item.priceInCents,
+          cashierBogusName: cashierName,
+          clientId: selectedClient?._id,
+          sourceShopName: item.sourceShopName,
+        });
       }
     });
     const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName, shopId: shopId!, timestamp: Date.now() };
@@ -191,20 +226,26 @@ export default function POSPage() {
         </CardHeader>
         <CardContent className="flex-1 overflow-auto space-y-2">
           {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Tap products to add to cart</p>}
-          {cart.map(item => (
-            <div key={item.product._id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.template.name}</p>
-                <p className="text-xs text-muted-foreground">{formatPrice(item.priceInCents)} each</p>
+          {cart.map(item => {
+            const cartKey = `${item.product._id}_${item.sourceShopName || ''}`;
+            return (
+              <div key={cartKey} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.template.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatPrice(item.priceInCents)} each</p>
+                  {item.sourceShopName && (
+                    <p className="text-xs text-accent font-medium">From {item.sourceShopName}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => updateQuantity(item.product._id, item.sourceShopName, -1)}><Minus className="h-3 w-3" /></Button>
+                  <span className="w-6 text-center text-sm">{item.quantity}</span>
+                  <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => updateQuantity(item.product._id, item.sourceShopName, 1)}><Plus className="h-3 w-3" /></Button>
+                </div>
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setCart(prev => prev.filter(c => `${c.product._id}_${c.sourceShopName || ''}` !== cartKey))}><Trash2 className="h-3 w-3" /></Button>
               </div>
-              <div className="flex items-center gap-1">
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => updateQuantity(item.product._id, -1)}><Minus className="h-3 w-3" /></Button>
-                <span className="w-6 text-center text-sm">{item.quantity}</span>
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => updateQuantity(item.product._id, 1)}><Plus className="h-3 w-3" /></Button>
-              </div>
-              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setCart(prev => prev.filter(c => c.product._id !== item.product._id))}><Trash2 className="h-3 w-3" /></Button>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
         <div className="p-4 border-t">
           <div className="flex items-center justify-between mb-3">
@@ -232,7 +273,7 @@ export default function POSPage() {
           <div className="overflow-auto max-h-[50vh]">
             {(() => {
               const allProducts = getProducts();
-              const allShops = getShops();
+              const allShopsList = getShops();
               const query = globalSearchQuery.toLowerCase().trim();
               if (!query) return <p className="text-sm text-muted-foreground text-center py-4">Type to search for products...</p>;
               const results = allProducts.filter(p => {
@@ -250,22 +291,47 @@ export default function POSPage() {
                       <TableHead>Shop</TableHead>
                       <TableHead className="text-right">Price</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {results.map(p => {
                       const tmpl = templates.find(t => t._id === p.productTemplateId);
                       const cat = tmpl ? categories.find(c => c._id === tmpl.productCategoryId) : null;
-                      const shopInfo = allShops.find(s => s._id === p.shopId);
+                      const shopInfo = allShopsList.find(s => s._id === p.shopId);
                       const price = p.useDefaultPrice ? tmpl?.priceInCents || 0 : p.priceInCentsAtShop || 0;
+                      const isCurrentShop = p.shopId === shopId;
                       return (
                         <TableRow key={p._id}>
                           <TableCell className="font-medium">{tmpl?.name}</TableCell>
                           <TableCell>{cat?.name}</TableCell>
-                          <TableCell><Badge variant="secondary">{shopInfo?.name}</Badge></TableCell>
+                          <TableCell>
+                            <Badge variant={isCurrentShop ? "default" : "secondary"}>
+                              {shopInfo?.name}{isCurrentShop && " (current)"}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">{formatPrice(price)}</TableCell>
                           <TableCell className="text-right">
                             <Badge variant={p.quantity <= 0 ? "destructive" : p.quantity <= 5 ? "outline" : "secondary"}>{p.quantity}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {p.quantity > 0 && (
+                              <Button
+                                size="sm"
+                                variant={isCurrentShop ? "outline" : "default"}
+                                onClick={() => {
+                                  if (isCurrentShop) {
+                                    addToCart(p);
+                                    setShowProductSearch(false);
+                                  } else {
+                                    addCrossShopToCart(p, shopInfo?.name || "Unknown");
+                                  }
+                                }}
+                              >
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                {isCurrentShop ? "Add" : `Buy from ${shopInfo?.name}`}
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -290,9 +356,14 @@ export default function POSPage() {
               </div>
               <div className="space-y-1">
                 {currentSale.items.map((item, i) => (
-                  <div key={i} className="flex justify-between text-sm">
-                    <span>{item.template.name} x{item.quantity}</span>
-                    <span>{formatPrice(item.priceInCents * item.quantity)}</span>
+                  <div key={i}>
+                    <div className="flex justify-between text-sm">
+                      <span>{item.template.name} x{item.quantity}</span>
+                      <span>{formatPrice(item.priceInCents * item.quantity)}</span>
+                    </div>
+                    {item.sourceShopName && (
+                      <p className="text-xs text-muted-foreground italic ml-2">Bought from {item.sourceShopName}</p>
+                    )}
                   </div>
                 ))}
               </div>
