@@ -5,19 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Package, LogIn } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, LoginFormData } from "@/lib/schemas";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const handleSubmit = (data: LoginFormData) => {
     setLoading(true);
     setTimeout(() => {
-      const success = login(email, password);
+      const success = login(data.email, data.password);
       if (!success) {
         toast({ title: "Login failed", description: "Invalid email or password.", variant: "destructive" });
       }
@@ -51,20 +57,28 @@ export default function LoginPage() {
             <CardDescription>Enter your credentials to access the system</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Email</label>
-                <Input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Password</label>
-                <Input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                <LogIn className="mr-2 h-4 w-4" />
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="password" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 
@@ -74,7 +88,10 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">
             {demoUsers.map(u => (
-              <Button key={u.email} variant="outline" size="sm" className="text-xs" onClick={() => { setEmail(u.email); setPassword(u.password); }}>
+              <Button key={u.email} variant="outline" size="sm" className="text-xs" onClick={() => {
+                form.setValue("email", u.email);
+                form.setValue("password", u.password);
+              }}>
                 {u.label}
               </Button>
             ))}

@@ -96,6 +96,7 @@ export type ProductSold = {
   priceInCents: number;
   cashierBogusName: string;
   clientId?: string;
+  sourceShopName?: string;
 };
 
 export type Client = {
@@ -135,6 +136,7 @@ export interface CartItem {
   category: ProductCategory;
   quantity: number;
   priceInCents: number;
+  sourceShopName?: string;
 }
 
 // Sale summary

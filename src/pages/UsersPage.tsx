@@ -1,6 +1,6 @@
 import * as React from "react";
 import { PageHeader } from "@/components/layout/PageLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Shield, Store } from "lucide-react";
 import { ConfirmModal } from "@/components/forms/ModalForm";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { userFormSchema, UserFormData } from "@/lib/schemas";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
-  getUsers,
-  getUserRoles,
-  getUserShopAssignments,
-  getUserPermissions,
-  getShops,
-  createUser,
-  updateUser,
-  deleteUser,
-  setUserRole,
-  assignUserToShop,
-  removeUserFromShop,
-  setUserPermissions,
+  getUsers, getUserRoles, getUserShopAssignments, getUserPermissions, getShops,
+  createUser, updateUser, deleteUser, setUserRole, assignUserToShop, removeUserFromShop, setUserPermissions,
 } from "@/lib/database";
 import type { User, RoleType, PermissionKey } from "@/types";
 import { ROLE_LABELS, PERMISSION_GROUPS, PERMISSION_LABELS, ALL_PERMISSIONS } from "@/lib/permissions";
@@ -36,7 +30,7 @@ export default function UsersPage() {
   const [deleteItem, setDeleteItem] = React.useState<User | null>(null);
   const [showCreate, setShowCreate] = React.useState(false);
   const [permUser, setPermUser] = React.useState<User | null>(null);
-  
+
   const shops = getShops();
   const roles = getUserRoles();
   const assignments = getUserShopAssignments();
@@ -67,7 +61,6 @@ export default function UsersPage() {
 
       <div className="grid gap-4">
         {users.map(user => {
-          const userRole = roles.find(r => r.userId === user._id);
           const userShops = getUserShops(user._id);
           return (
             <Card key={user._id}>
@@ -97,7 +90,6 @@ export default function UsersPage() {
         })}
       </div>
 
-      {/* Create/Edit User Dialog */}
       <UserFormDialog
         open={showCreate || !!editUser}
         user={editUser}
@@ -106,13 +98,8 @@ export default function UsersPage() {
         shops={shops}
       />
 
-      {/* Permissions Dialog */}
       {permUser && (
-        <PermissionsDialog
-          user={permUser}
-          shops={shops}
-          onClose={() => { setPermUser(null); refresh(); }}
-        />
+        <PermissionsDialog user={permUser} shops={shops} onClose={() => { setPermUser(null); refresh(); }} />
       )}
 
       <ConfirmModal
@@ -129,59 +116,43 @@ export default function UsersPage() {
 }
 
 function UserFormDialog({ open, user, onClose, onSave, shops }: {
-  open: boolean;
-  user: User | null;
-  onClose: () => void;
-  onSave: () => void;
-  shops: { _id: string; name: string }[];
+  open: boolean; user: User | null; onClose: () => void; onSave: () => void; shops: { _id: string; name: string }[];
 }) {
   const { toast } = useToast();
-  const [name, setName] = React.useState(user?.name || "");
-  const [email, setEmail] = React.useState(user?.email || "");
-  const [password, setPassword] = React.useState(user?.password || "");
-  const [isActive, setIsActive] = React.useState(user?.isActive ?? true);
-  const [role, setRole] = React.useState<RoleType>(() => {
-    if (user) {
-      const r = getUserRoles().find(r => r.userId === user._id);
-      return r?.role || 'app_user';
-    }
-    return 'app_user';
-  });
-  const [selectedShops, setSelectedShops] = React.useState<string[]>(() => {
-    if (user) {
-      return getUserShopAssignments().filter(a => a.userId === user._id).map(a => a.shopId);
-    }
-    return [];
+  const [selectedShops, setSelectedShops] = React.useState<string[]>([]);
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      name: "", email: "", password: "", isActive: true, role: "app_user",
+    },
   });
 
   React.useEffect(() => {
-    setName(user?.name || "");
-    setEmail(user?.email || "");
-    setPassword(user?.password || "");
-    setIsActive(user?.isActive ?? true);
     if (user) {
       const r = getUserRoles().find(r => r.userId === user._id);
-      setRole(r?.role || 'app_user');
+      form.reset({
+        name: user.name, email: user.email, password: user.password,
+        isActive: user.isActive, role: r?.role || "app_user",
+      });
       setSelectedShops(getUserShopAssignments().filter(a => a.userId === user._id).map(a => a.shopId));
     } else {
-      setRole('app_user');
+      form.reset({ name: "", email: "", password: "", isActive: true, role: "app_user" });
       setSelectedShops([]);
     }
   }, [user, open]);
 
-  const handleSave = () => {
-    if (!name || !email || !password) return;
+  const handleSubmit = (data: UserFormData) => {
     if (user) {
-      updateUser(user._id, { name, email, password, isActive });
-      setUserRole(user._id, role);
-      // Update shop assignments
+      updateUser(user._id, { name: data.name, email: data.email, password: data.password, isActive: data.isActive });
+      setUserRole(user._id, data.role as RoleType);
       const current = getUserShopAssignments().filter(a => a.userId === user._id).map(a => a.shopId);
       current.forEach(s => { if (!selectedShops.includes(s)) removeUserFromShop(user._id, s); });
       selectedShops.forEach(s => { if (!current.includes(s)) assignUserToShop(user._id, s); });
       toast({ title: "User updated" });
     } else {
-      const newUser = createUser({ name, email, password, isActive });
-      setUserRole(newUser._id, role);
+      const newUser = createUser({ name: data.name, email: data.email, password: data.password, isActive: data.isActive });
+      setUserRole(newUser._id, data.role as RoleType);
       selectedShops.forEach(s => assignUserToShop(newUser._id, s));
       toast({ title: "User created" });
     }
@@ -192,67 +163,68 @@ function UserFormDialog({ open, user, onClose, onSave, shops }: {
     setSelectedShops(prev => prev.includes(shopId) ? prev.filter(s => s !== shopId) : [...prev, shopId]);
   };
 
+  const watchedRole = form.watch("role");
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>{user ? "Edit User" : "Create User"}</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
-            <Input value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
-            <Input value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Active</label>
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Role</label>
-            <Select value={role} onValueChange={(v) => setRole(v as RoleType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(ROLE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(role === 'shop_manager' || role === 'app_user') && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Assigned Shops</label>
-              <div className="flex flex-wrap gap-2">
-                {shops.map(s => (
-                  <Badge key={s._id} variant={selectedShops.includes(s._id) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleShop(s._id)}>
-                    {s.name}
-                  </Badge>
-                ))}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="password" render={({ field }) => (
+              <FormItem><FormLabel>Password</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="isActive" render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                <FormLabel>Active</FormLabel>
+                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="role" render={({ field }) => (
+              <FormItem><FormLabel>Role</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {Object.entries(ROLE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select><FormMessage /></FormItem>
+            )} />
+            {(watchedRole === 'shop_manager' || watchedRole === 'app_user') && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Assigned Shops</label>
+                <div className="flex flex-wrap gap-2">
+                  {shops.map(s => (
+                    <Badge key={s._id} variant={selectedShops.includes(s._id) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleShop(s._id)}>
+                      {s.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          <Button onClick={handleSave} className="w-full">{user ? "Update" : "Create"}</Button>
-        </div>
+            )}
+            <Button type="submit" className="w-full">{user ? "Update" : "Create"}</Button>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
 }
 
 function PermissionsDialog({ user, shops, onClose }: {
-  user: User;
-  shops: { _id: string; name: string }[];
-  onClose: () => void;
+  user: User; shops: { _id: string; name: string }[]; onClose: () => void;
 }) {
   const { toast } = useToast();
   const userRole = getUserRoles().find(r => r.userId === user._id);
   const userShopIds = getUserShopAssignments().filter(a => a.userId === user._id).map(a => a.shopId);
   const currentPerms = getUserPermissions(user._id);
-  
+
   const [perms, setPerms] = React.useState<Set<string>>(() => {
     return new Set(currentPerms.map(p => `${p.permission}${p.shopId ? `_${p.shopId}` : ''}`));
   });
@@ -268,18 +240,9 @@ function PermissionsDialog({ user, shops, onClose }: {
   const handleSave = () => {
     const permList: { permission: PermissionKey; shopId?: string }[] = [];
     perms.forEach(key => {
-      const parts = key.split('_');
-      // Find the permission name (may contain underscores)
       for (const perm of ALL_PERMISSIONS) {
-        if (key === perm) {
-          permList.push({ permission: perm });
-          return;
-        }
-        if (key.startsWith(perm + '_')) {
-          const shopId = key.substring(perm.length + 1);
-          permList.push({ permission: perm, shopId });
-          return;
-        }
+        if (key === perm) { permList.push({ permission: perm }); return; }
+        if (key.startsWith(perm + '_')) { permList.push({ permission: perm, shopId: key.substring(perm.length + 1) }); return; }
       }
     });
     setUserPermissions(user._id, permList);
