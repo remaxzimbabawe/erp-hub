@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getShops, getProducts, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, formatPrice } from "@/lib/database";
+import { getShops, getProducts, getProductsByShop, getProductTemplates, getProductCategories, getClientsByShop, createProductSold, createStockTransfer, formatPrice } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -136,9 +136,11 @@ export default function POSPage() {
   const cartTotal = cart.reduce((sum, c) => sum + c.priceInCents * c.quantity, 0);
 
   const completeSale = () => {
+    const crossShopItems: { saleId: string; item: CartItem }[] = [];
+    
     cart.forEach(item => {
       for (let i = 0; i < item.quantity; i++) {
-        createProductSold({
+        const sale = createProductSold({
           name: item.template.name,
           productId: item.product._id,
           shopId: shopId!,
@@ -147,15 +149,50 @@ export default function POSPage() {
           clientId: selectedClient?._id,
           sourceShopName: item.sourceShopName,
         });
+        // Track cross-shop sales for transfer orders
+        if (item.sourceShopName) {
+          crossShopItems.push({ saleId: sale._id, item });
+        }
       }
     });
+
+    // Create stock transfer orders for cross-shop items
+    const groupedCrossShop = new Map<string, { item: CartItem; saleIds: string[] }>();
+    crossShopItems.forEach(({ saleId, item }) => {
+      const key = `${item.product.shopId}_${item.product.productTemplateId}`;
+      const existing = groupedCrossShop.get(key);
+      if (existing) {
+        existing.saleIds.push(saleId);
+      } else {
+        groupedCrossShop.set(key, { item, saleIds: [saleId] });
+      }
+    });
+
+    groupedCrossShop.forEach(({ item, saleIds }) => {
+      createStockTransfer({
+        fromShopId: item.product.shopId,
+        toShopId: shopId!,
+        productTemplateId: item.product.productTemplateId,
+        quantity: item.quantity,
+        status: 'pending',
+        requestedBy: currentUser?._id || '',
+        saleReference: saleIds[0],
+        notes: `Auto-generated from cross-shop sale. Sold at ${shop?.name}, stock from ${item.sourceShopName}.`,
+      });
+    });
+
     const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName, shopId: shopId!, timestamp: Date.now() };
     setCurrentSale(sale);
     setLastSale(sale);
     setShowReceipt(true);
     setCart([]);
     setSelectedClient(null);
-    toast({ title: "Sale completed!", description: formatPrice(cartTotal) });
+    
+    const hasCrossShop = groupedCrossShop.size > 0;
+    toast({ 
+      title: "Sale completed!", 
+      description: `${formatPrice(cartTotal)}${hasCrossShop ? ` — ${groupedCrossShop.size} transfer order(s) created` : ''}` 
+    });
   };
 
   const printReceipt = () => {
