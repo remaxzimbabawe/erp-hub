@@ -67,7 +67,11 @@ export default function StockTransfersPage() {
       return;
     }
     createStockTransfer({
-      ...data,
+      fromShopId: data.fromShopId,
+      toShopId: data.toShopId,
+      productTemplateId: data.productTemplateId,
+      quantity: data.quantity,
+      notes: data.notes,
       status: 'pending',
       requestedBy: currentUser?._id || '',
     });
@@ -109,15 +113,15 @@ export default function StockTransfersPage() {
   const pendingCount = transfers.filter(t => t.status === 'pending').length;
   const completedCount = transfers.filter(t => t.status === 'completed').length;
 
-  const exportColumns = [
-    { key: 'date', header: 'Date' },
-    { key: 'product', header: 'Product' },
-    { key: 'from', header: 'From Shop' },
-    { key: 'to', header: 'To Shop' },
-    { key: 'quantity', header: 'Quantity' },
-    { key: 'status', header: 'Status' },
-    { key: 'saleRef', header: 'Sale Reference' },
-    { key: 'notes', header: 'Notes' },
+  const exportColumns: import('@/lib/export').ExportColumn[] = [
+    { header: 'Date', accessor: (r: any) => r.date },
+    { header: 'Product', accessor: (r: any) => r.product },
+    { header: 'From Shop', accessor: (r: any) => r.from },
+    { header: 'To Shop', accessor: (r: any) => r.to },
+    { header: 'Quantity', accessor: (r: any) => r.quantity },
+    { header: 'Status', accessor: (r: any) => r.status },
+    { header: 'Sale Reference', accessor: (r: any) => r.saleRef },
+    { header: 'Notes', accessor: (r: any) => r.notes },
   ];
 
   const exportData = filtered.map(t => ({
