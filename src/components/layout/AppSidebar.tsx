@@ -29,6 +29,7 @@ import {
   Shield,
   FileText,
   BarChart3,
+  ArrowLeftRight,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -64,6 +65,7 @@ export function AppSidebar() {
   if (role === 'super_admin' || role === 'manager' || hasPermission('view_products')) {
     inventoryNavItems.push({ title: "Products", url: "/products", icon: Package });
     inventoryNavItems.push({ title: "Stock Overview", url: "/stock", icon: BarChart3 });
+    inventoryNavItems.push({ title: "Stock Transfers", url: "/stock-transfers", icon: ArrowLeftRight });
   }
 
   const managementNavItems: typeof mainNavItems = [];

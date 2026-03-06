@@ -53,6 +53,14 @@ export const userFormSchema = z.object({
   role: z.enum(['super_admin', 'manager', 'shop_manager', 'app_user']),
 });
 
+export const stockTransferSchema = z.object({
+  fromShopId: z.string().min(1, 'Source shop is required'),
+  toShopId: z.string().min(1, 'Destination shop is required'),
+  productTemplateId: z.string().min(1, 'Product is required'),
+  quantity: z.number().int('Quantity must be a whole number').min(1, 'Quantity must be at least 1'),
+  notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
+});
+
 export type ProductCategoryFormData = z.infer<typeof productCategorySchema>;
 export type ProductTemplateFormData = z.infer<typeof productTemplateSchema>;
 export type ShopFormData = z.infer<typeof shopSchema>;
@@ -62,3 +70,4 @@ export type NotificationFormData = z.infer<typeof notificationSchema>;
 export type CashierLoginFormData = z.infer<typeof cashierLoginSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type UserFormData = z.infer<typeof userFormSchema>;
+export type StockTransferFormData = z.infer<typeof stockTransferSchema>;
