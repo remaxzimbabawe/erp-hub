@@ -127,7 +127,25 @@ export interface Database {
   userShopAssignments: UserShopAssignment[];
   permissions: Permission[];
   auditLogs: AuditLog[];
+  stockTransfers: StockTransfer[];
 }
+
+export type StockTransferStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+export type StockTransfer = {
+  _id: string;
+  _creationTime: number;
+  fromShopId: string;
+  toShopId: string;
+  productTemplateId: string;
+  quantity: number;
+  status: StockTransferStatus;
+  requestedBy: string;
+  processedBy?: string;
+  processedAt?: number;
+  saleReference?: string; // links to ProductSold._id for cross-shop sales
+  notes?: string;
+};
 
 // Cart item for POS
 export interface CartItem {
