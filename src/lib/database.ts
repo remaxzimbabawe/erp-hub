@@ -16,6 +16,8 @@ import type {
   AuditLog,
   PermissionKey,
   RoleType,
+  StockTransfer,
+  StockTransferStatus,
 } from '@/types';
 
 // In-memory database that persists to localStorage
@@ -32,6 +34,7 @@ function loadDatabase(): Database {
       if (!db.userShopAssignments) db.userShopAssignments = (initialData as any).userShopAssignments || [];
       if (!db.permissions) db.permissions = (initialData as any).permissions || [];
       if (!db.auditLogs) db.auditLogs = [];
+      if (!db.stockTransfers) db.stockTransfers = [];
       return db;
     } catch {
       return initialData as unknown as Database;
@@ -456,6 +459,82 @@ export function deleteNotification(id: string): boolean {
   saveDatabase(database);
   audit('delete', 'notification', id, [{ field: 'name', from: notif.name, to: null }], `Removed notification contact "${notif.name}"`);
   return true;
+}
+
+// Stock Transfers
+export function getStockTransfers(): StockTransfer[] {
+  if (!database.stockTransfers) database.stockTransfers = [];
+  return database.stockTransfers;
+}
+
+export function getStockTransfersByShop(shopId: string): StockTransfer[] {
+  if (!database.stockTransfers) database.stockTransfers = [];
+  return database.stockTransfers.filter(t => t.fromShopId === shopId || t.toShopId === shopId);
+}
+
+export function createStockTransfer(data: Omit<StockTransfer, '_id' | '_creationTime'>): StockTransfer {
+  if (!database.stockTransfers) database.stockTransfers = [];
+  const transfer: StockTransfer = { ...data, _id: generateId('transfer'), _creationTime: Date.now() };
+  database.stockTransfers.push(transfer);
+  saveDatabase(database);
+  const fromShop = getShop(data.fromShopId);
+  const toShop = getShop(data.toShopId);
+  const tmpl = getProductTemplate(data.productTemplateId);
+  audit('create', 'stockTransfer', transfer._id, [
+    { field: 'from', from: null, to: fromShop?.name },
+    { field: 'to', from: null, to: toShop?.name },
+    { field: 'quantity', from: null, to: data.quantity },
+  ], `Stock transfer request: ${data.quantity}x "${tmpl?.name}" from ${fromShop?.name} to ${toShop?.name}`);
+  return transfer;
+}
+
+export function updateStockTransferStatus(
+  id: string,
+  status: StockTransferStatus,
+  processedBy: string
+): StockTransfer | undefined {
+  if (!database.stockTransfers) database.stockTransfers = [];
+  const index = database.stockTransfers.findIndex(t => t._id === id);
+  if (index === -1) return undefined;
+  const old = { ...database.stockTransfers[index] };
+  database.stockTransfers[index].status = status;
+  database.stockTransfers[index].processedBy = processedBy;
+  database.stockTransfers[index].processedAt = Date.now();
+
+  // If completed, actually move the stock
+  if (status === 'completed') {
+    const transfer = database.stockTransfers[index];
+    // Decrease source shop stock
+    const sourceProduct = database.products.find(
+      p => p.productTemplateId === transfer.productTemplateId && p.shopId === transfer.fromShopId
+    );
+    if (sourceProduct) {
+      sourceProduct.quantity -= transfer.quantity;
+    }
+    // Increase destination shop stock (create if doesn't exist)
+    let destProduct = database.products.find(
+      p => p.productTemplateId === transfer.productTemplateId && p.shopId === transfer.toShopId
+    );
+    if (destProduct) {
+      destProduct.quantity += transfer.quantity;
+    } else {
+      const tmpl = getProductTemplate(transfer.productTemplateId);
+      destProduct = {
+        _id: generateId('prod'),
+        _creationTime: Date.now(),
+        productTemplateId: transfer.productTemplateId,
+        shopId: transfer.toShopId,
+        quantity: transfer.quantity,
+        useDefaultPrice: true,
+      };
+      database.products.push(destProduct);
+    }
+  }
+
+  saveDatabase(database);
+  audit('update', 'stockTransfer', id, [{ field: 'status', from: old.status, to: status }],
+    `Stock transfer ${status}`);
+  return database.stockTransfers[index];
 }
 
 // Utility functions

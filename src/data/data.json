@@ -92,5 +92,6 @@
     { "_id": "perm_14", "userId": "user_4", "permission": "view_clients", "shopId": "shop_1" },
     { "_id": "perm_15", "userId": "user_4", "permission": "view_dashboard", "shopId": "shop_1" }
   ],
-  "auditLogs": []
+  "auditLogs": [],
+  "stockTransfers": []
 }
