@@ -4,7 +4,9 @@ import { DataView } from "@/components/data/DataView";
 import { Badge } from "@/components/ui/badge";
 import { getAuditLogs, getUsers } from "@/lib/database";
 import { useAuth } from "@/lib/auth";
+import { ExportMenu } from "@/components/common/ExportMenu";
 import type { AuditLog } from "@/types";
+import type { ExportColumn } from "@/lib/export";
 
 export default function AuditLogsPage() {
   const { hasRole } = useAuth();
@@ -57,9 +59,21 @@ export default function AuditLogsPage() {
     },
   ];
 
+  const exportColumns: ExportColumn[] = [
+    { header: "Time", accessor: (item: AuditLog) => new Date(item._creationTime).toLocaleString() },
+    { header: "User", accessor: (item: AuditLog) => getUserName(item.userId) },
+    { header: "Action", accessor: (item: AuditLog) => item.action },
+    { header: "Entity", accessor: (item: AuditLog) => item.entityType },
+    { header: "Description", accessor: (item: AuditLog) => item.description },
+    { header: "Changes", accessor: (item: AuditLog) => item.changes.map(c => `${c.field}: ${String(c.from ?? '—')} → ${String(c.to ?? '—')}`).join("; ") },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Audit Logs" description="Track all system changes and user actions" />
+      <div className="flex items-center justify-between">
+        <PageHeader title="Audit Logs" description="Track all system changes and user actions" />
+        <ExportMenu data={logs} columns={exportColumns} title="Audit Logs" filename="audit-logs" />
+      </div>
       <DataView
         data={logs}
         columns={columns}

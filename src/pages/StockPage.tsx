@@ -7,25 +7,32 @@ import { getProducts, getProductTemplates, getProductCategories, getShops, forma
 import { useAuth } from "@/lib/auth";
 import { Search, AlertTriangle, PackageX } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ExportMenu } from "@/components/common/ExportMenu";
+import type { ExportColumn } from "@/lib/export";
 
 const LOW_STOCK_THRESHOLD = 5;
 
-export default function StockPage() {
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const { hasRole } = useAuth();
+type EnrichedProduct = ReturnType<typeof useEnrichedProducts>[number];
 
+function useEnrichedProducts() {
   const products = getProducts();
   const templates = getProductTemplates();
   const categories = getProductCategories();
   const shops = getShops();
 
-  const enriched = products.map(p => {
+  return products.map(p => {
     const template = templates.find(t => t._id === p.productTemplateId);
     const category = template ? categories.find(c => c._id === template.productCategoryId) : null;
     const shop = shops.find(s => s._id === p.shopId);
     const price = p.useDefaultPrice ? template?.priceInCents || 0 : p.priceInCentsAtShop || 0;
     return { ...p, templateName: template?.name || "Unknown", categoryName: category?.name || "Unknown", shopName: shop?.name || "Unknown", price };
   });
+}
+
+export default function StockPage() {
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const enriched = useEnrichedProducts();
 
   const query = searchQuery.toLowerCase().trim();
   const filtered = query
@@ -35,7 +42,6 @@ export default function StockPage() {
   const outOfStock = filtered.filter(p => p.quantity <= 0);
   const lowStock = filtered.filter(p => p.quantity > 0 && p.quantity <= LOW_STOCK_THRESHOLD);
 
-  // Group by template to show which shops have stock
   const groupByTemplate = (items: typeof enriched) => {
     const map = new Map<string, typeof enriched>();
     items.forEach(item => {
@@ -50,6 +56,15 @@ export default function StockPage() {
       products,
     }));
   };
+
+  const exportColumns: ExportColumn[] = [
+    { header: "Product", accessor: (item: EnrichedProduct) => item.templateName },
+    { header: "Category", accessor: (item: EnrichedProduct) => item.categoryName },
+    { header: "Shop", accessor: (item: EnrichedProduct) => item.shopName },
+    { header: "Price", accessor: (item: EnrichedProduct) => formatPrice(item.price) },
+    { header: "Stock", accessor: (item: EnrichedProduct) => String(item.quantity) },
+    { header: "Status", accessor: (item: EnrichedProduct) => item.quantity <= 0 ? "Out of Stock" : item.quantity <= LOW_STOCK_THRESHOLD ? "Low Stock" : "In Stock" },
+  ];
 
   const StockTable = ({ items }: { items: typeof enriched }) => (
     <Table>
@@ -86,12 +101,12 @@ export default function StockPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">Stock Overview</h1>
           <p className="text-muted-foreground">Monitor inventory levels across all shops</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-3">
           <Card className="px-4 py-2 flex items-center gap-2">
             <PackageX className="h-4 w-4 text-destructive" />
             <div className="text-center">
@@ -100,12 +115,13 @@ export default function StockPage() {
             </div>
           </Card>
           <Card className="px-4 py-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <AlertTriangle className="h-4 w-4 text-accent-foreground" />
             <div className="text-center">
-              <p className="text-xl font-bold text-yellow-500">{lowStock.length}</p>
+              <p className="text-xl font-bold text-accent-foreground">{lowStock.length}</p>
               <p className="text-xs text-muted-foreground">Low Stock</p>
             </div>
           </Card>
+          <ExportMenu data={filtered} columns={exportColumns} title="Inventory Report" filename="inventory-report" />
         </div>
       </div>
 
@@ -141,11 +157,10 @@ export default function StockPage() {
                       <Badge variant={p.quantity <= 0 ? "destructive" : "outline"} className="text-xs">{p.quantity} left</Badge>
                     </div>
                   ))}
-                  {/* Show shops that DO have stock for comparison */}
                   {enriched.filter(ep => ep.productTemplateId === group.templateId && ep.quantity > LOW_STOCK_THRESHOLD).map(p => (
-                    <div key={p._id} className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
+                    <div key={p._id} className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
                       <span className="text-sm">{p.shopName}</span>
-                      <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700">{p.quantity} in stock</Badge>
+                      <Badge variant="secondary" className="text-xs">{p.quantity} in stock</Badge>
                     </div>
                   ))}
                 </div>
