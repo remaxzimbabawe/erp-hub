@@ -19,6 +19,7 @@ import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import StockPage from "./pages/StockPage";
 import StockTransfersPage from "./pages/StockTransfersPage";
+import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import { setCurrentAuditUser } from "@/lib/database";
 import * as React from "react";
