@@ -19,6 +19,7 @@ import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import StockPage from "./pages/StockPage";
 import StockTransfersPage from "./pages/StockTransfersPage";
+import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import { setCurrentAuditUser } from "@/lib/database";
 import * as React from "react";
@@ -52,6 +53,7 @@ function AuthenticatedApp() {
          <Route path="/audit-logs" element={<AuditLogsPage />} />
          <Route path="/stock" element={<StockPage />} />
          <Route path="/stock-transfers" element={<StockTransfersPage />} />
+         <Route path="/reports" element={<ReportsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
