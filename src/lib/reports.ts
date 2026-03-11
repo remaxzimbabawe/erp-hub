@@ -86,6 +86,17 @@ export const REPORT_CATALOG: {
   { type: "out_of_stock", label: "Out of Stock", group: "Inventory", description: "Items that reached zero or negative" },
   { type: "inventory_valuation", label: "Inventory Valuation", group: "Inventory", description: "Total value of stock per shop based on cost price" },
   { type: "stock_aging", label: "Stock Aging", group: "Inventory", description: "How long items have stayed in inventory" },
+  // Stock Transfers
+  { type: "transfer_summary", label: "Transfer Summary", group: "Stock Transfers", description: "Summary of transfers between shops with quantities and values" },
+  { type: "transfer_history", label: "Transfer History", group: "Stock Transfers", description: "Detailed history of each transfer transaction" },
+  // Customer
+  { type: "customer_purchase_history", label: "Customer Purchase History", group: "Customer", description: "All purchases by each customer" },
+  { type: "top_customers", label: "Top Customers", group: "Customer", description: "Customers ranked by total spending" },
+  { type: "customer_balance", label: "Customer Balance", group: "Customer", description: "Credit account balances per customer" },
+  // Product Performance
+  { type: "best_selling_products", label: "Best Selling Products", group: "Product Performance", description: "Top items ranked by quantity sold" },
+  { type: "slow_moving_products", label: "Slow Moving Products", group: "Product Performance", description: "Products with very few sales" },
+  { type: "dead_stock", label: "Dead Stock", group: "Product Performance", description: "Stock that has not moved for a long time" },
 ];
 
 // ── Generators ──────────────────────────────────────
