@@ -34,7 +34,18 @@ export type ReportType =
   | "low_stock"
   | "out_of_stock"
   | "inventory_valuation"
-  | "stock_aging";
+  | "stock_aging"
+  // Stock Transfers
+  | "transfer_summary"
+  | "transfer_history"
+  // Customer
+  | "customer_purchase_history"
+  | "top_customers"
+  | "customer_balance"
+  // Product Performance
+  | "best_selling_products"
+  | "slow_moving_products"
+  | "dead_stock";
 
 export type ReportStatus = "pending" | "ready" | "error";
 
