@@ -80,6 +80,9 @@ const GROUP_ICONS: Record<string, React.ReactNode> = {
   Financial: <DollarSign className="h-4 w-4" />,
   Sales: <FileBarChart className="h-4 w-4" />,
   Inventory: <Package className="h-4 w-4" />,
+  "Stock Transfers": <ArrowLeftRight className="h-4 w-4" />,
+  Customer: <Users className="h-4 w-4" />,
+  "Product Performance": <TrendingUp className="h-4 w-4" />,
 };
 
 export default function ReportsPage() {
