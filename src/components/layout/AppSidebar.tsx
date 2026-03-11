@@ -30,6 +30,7 @@ import {
   FileText,
   BarChart3,
   ArrowLeftRight,
+  ClipboardList,
 } from "lucide-react";
 
 export function AppSidebar() {
