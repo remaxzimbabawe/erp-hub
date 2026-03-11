@@ -79,6 +79,9 @@ export function AppSidebar() {
   if (role === 'super_admin' || (role === 'manager' && hasPermission('manage_notifications'))) {
     managementNavItems.push({ title: "Notifications", url: "/notifications", icon: Bell });
   }
+  if (role === 'super_admin' || role === 'manager' || role === 'shop_manager') {
+    managementNavItems.push({ title: "Reports", url: "/reports", icon: ClipboardList });
+  }
 
   const adminNavItems: typeof mainNavItems = [];
   if (role === 'super_admin') {
