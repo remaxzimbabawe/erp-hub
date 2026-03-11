@@ -622,7 +622,7 @@ export function generateReport(
       return {
         data,
         columns: [
-          { header: "Rank", accessor: (_r: any, i: number) => String((i || 0) + 1) },
+          { header: "Product", accessor: (r: any) => r.name },
           { header: "Product", accessor: (r: any) => r.name },
           { header: "Category", accessor: (r: any) => r.category },
           { header: "Qty Sold", accessor: (r: any) => String(r.qty) },
