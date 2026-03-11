@@ -437,6 +437,302 @@ export function generateReport(
       };
     }
 
+    // ── Stock Transfers ──
+    case "transfer_summary": {
+      const transfers = getStockTransfers();
+      const filtered = shopId
+        ? transfers.filter((t) => t.fromShopId === shopId || t.toShopId === shopId)
+        : transfers;
+      const routeMap: Record<string, { fromShop: string; toShop: string; totalQty: number; totalValue: number; count: number }> = {};
+      filtered.forEach((t) => {
+        const from = getShop(t.fromShopId);
+        const to = getShop(t.toShopId);
+        const tmpl = getProductTemplate(t.productTemplateId);
+        const key = `${t.fromShopId}_${t.toShopId}`;
+        if (!routeMap[key])
+          routeMap[key] = { fromShop: from?.name || t.fromShopId, toShop: to?.name || t.toShopId, totalQty: 0, totalValue: 0, count: 0 };
+        routeMap[key].totalQty += t.quantity;
+        routeMap[key].totalValue += t.quantity * (tmpl?.priceInCents || 0);
+        routeMap[key].count += 1;
+      });
+      const data = Object.values(routeMap).sort((a, b) => b.totalValue - a.totalValue);
+      const grandValue = data.reduce((a, b) => a + b.totalValue, 0);
+      return {
+        data,
+        columns: [
+          { header: "From Shop", accessor: (r: any) => r.fromShop },
+          { header: "To Shop", accessor: (r: any) => r.toShop },
+          { header: "Transfers", accessor: (r: any) => String(r.count) },
+          { header: "Total Qty", accessor: (r: any) => String(r.totalQty) },
+          { header: "Total Value", accessor: (r: any) => formatPrice(r.totalValue) },
+        ],
+        summary: { "Total Transfers": String(filtered.length), "Total Value": formatPrice(grandValue) },
+      };
+    }
+
+    case "transfer_history": {
+      const transfers = getStockTransfers();
+      let filtered = shopId
+        ? transfers.filter((t) => t.fromShopId === shopId || t.toShopId === shopId)
+        : transfers;
+      if (dateFrom) filtered = filtered.filter((t) => t._creationTime >= dateFrom);
+      if (dateTo) filtered = filtered.filter((t) => t._creationTime <= dateTo);
+      const data = filtered
+        .sort((a, b) => b._creationTime - a._creationTime)
+        .map((t) => {
+          const from = getShop(t.fromShopId);
+          const to = getShop(t.toShopId);
+          const tmpl = getProductTemplate(t.productTemplateId);
+          return {
+            date: new Date(t._creationTime).toLocaleString(),
+            product: tmpl?.name || "Unknown",
+            fromShop: from?.name || t.fromShopId,
+            toShop: to?.name || t.toShopId,
+            quantity: t.quantity,
+            value: t.quantity * (tmpl?.priceInCents || 0),
+            status: t.status,
+            saleRef: t.saleReference || "—",
+            notes: t.notes || "—",
+          };
+        });
+      return {
+        data,
+        columns: [
+          { header: "Date", accessor: (r: any) => r.date },
+          { header: "Product", accessor: (r: any) => r.product },
+          { header: "From", accessor: (r: any) => r.fromShop },
+          { header: "To", accessor: (r: any) => r.toShop },
+          { header: "Qty", accessor: (r: any) => String(r.quantity) },
+          { header: "Value", accessor: (r: any) => formatPrice(r.value) },
+          { header: "Status", accessor: (r: any) => r.status },
+          { header: "Sale Ref", accessor: (r: any) => r.saleRef },
+        ],
+      };
+    }
+
+    // ── Customer ──
+    case "customer_purchase_history": {
+      const clients = getClients();
+      const filteredClients = shopId ? clients.filter((c) => c.shopId === shopId) : clients;
+      const allSales = filterSales(shopId, dateFrom, dateTo);
+      const data: any[] = [];
+      filteredClients.forEach((client) => {
+        const clientSales = allSales.filter((s) => s.clientId === client._id);
+        clientSales.forEach((s) => {
+          const shop = getShop(s.shopId);
+          data.push({
+            customer: client.name,
+            phone: client.phoneNumber,
+            product: s.name,
+            shop: shop?.name || s.shopId,
+            price: s.priceInCents,
+            date: fmtDate(s._creationTime),
+          });
+        });
+      });
+      return {
+        data: data.sort((a, b) => a.customer.localeCompare(b.customer)),
+        columns: [
+          { header: "Customer", accessor: (r: any) => r.customer },
+          { header: "Phone", accessor: (r: any) => r.phone },
+          { header: "Product", accessor: (r: any) => r.product },
+          { header: "Shop", accessor: (r: any) => r.shop },
+          { header: "Price", accessor: (r: any) => formatPrice(r.price) },
+          { header: "Date", accessor: (r: any) => r.date },
+        ],
+        summary: { "Total Customers": String(filteredClients.length), "Total Purchases": String(data.length) },
+      };
+    }
+
+    case "top_customers": {
+      const clients = getClients();
+      const filteredClients = shopId ? clients.filter((c) => c.shopId === shopId) : clients;
+      const allSales = filterSales(shopId, dateFrom, dateTo);
+      const custMap: Record<string, { name: string; phone: string; shop: string; totalSpent: number; purchases: number }> = {};
+      filteredClients.forEach((client) => {
+        const clientSales = allSales.filter((s) => s.clientId === client._id);
+        const shop = getShop(client.shopId);
+        custMap[client._id] = {
+          name: client.name,
+          phone: client.phoneNumber,
+          shop: shop?.name || client.shopId,
+          totalSpent: clientSales.reduce((sum, s) => sum + s.priceInCents, 0),
+          purchases: clientSales.length,
+        };
+      });
+      const data = Object.values(custMap)
+        .filter((c) => c.purchases > 0)
+        .sort((a, b) => b.totalSpent - a.totalSpent);
+      return {
+        data,
+        columns: [
+          { header: "Customer", accessor: (r: any) => r.name },
+          { header: "Phone", accessor: (r: any) => r.phone },
+          { header: "Shop", accessor: (r: any) => r.shop },
+          { header: "Purchases", accessor: (r: any) => String(r.purchases) },
+          { header: "Total Spent", accessor: (r: any) => formatPrice(r.totalSpent) },
+        ],
+      };
+    }
+
+    case "customer_balance": {
+      // Simulated credit balance: customers with purchases tracked
+      const clients = getClients();
+      const filteredClients = shopId ? clients.filter((c) => c.shopId === shopId) : clients;
+      const allSales = getProductsSold();
+      const data = filteredClients.map((client) => {
+        const clientSales = allSales.filter((s) => s.clientId === client._id);
+        const totalSpent = clientSales.reduce((sum, s) => sum + s.priceInCents, 0);
+        const shop = getShop(client.shopId);
+        return {
+          name: client.name,
+          phone: client.phoneNumber,
+          shop: shop?.name || client.shopId,
+          totalPurchases: clientSales.length,
+          totalSpent,
+          balance: 0, // placeholder — credit system not implemented
+        };
+      });
+      return {
+        data: data.sort((a, b) => a.name.localeCompare(b.name)),
+        columns: [
+          { header: "Customer", accessor: (r: any) => r.name },
+          { header: "Phone", accessor: (r: any) => r.phone },
+          { header: "Shop", accessor: (r: any) => r.shop },
+          { header: "Purchases", accessor: (r: any) => String(r.totalPurchases) },
+          { header: "Total Spent", accessor: (r: any) => formatPrice(r.totalSpent) },
+          { header: "Balance", accessor: (r: any) => formatPrice(r.balance) },
+        ],
+      };
+    }
+
+    // ── Product Performance ──
+    case "best_selling_products": {
+      const prodMap: Record<string, { name: string; category: string; qty: number; revenue: number }> = {};
+      sales.forEach((s) => {
+        const prod = products.find((p) => p._id === s.productId);
+        const tmpl = prod ? templates.find((t) => t._id === prod.productTemplateId) : null;
+        const cat = tmpl ? categories.find((c) => c._id === tmpl.productCategoryId) : null;
+        const key = tmpl?._id || s.name;
+        if (!prodMap[key]) prodMap[key] = { name: tmpl?.name || s.name, category: cat?.name || "Unknown", qty: 0, revenue: 0 };
+        prodMap[key].qty += 1;
+        prodMap[key].revenue += s.priceInCents;
+      });
+      const data = Object.values(prodMap).sort((a, b) => b.qty - a.qty).slice(0, 20);
+      return {
+        data,
+        columns: [
+          { header: "Rank", accessor: (_r: any, i: number) => String((i || 0) + 1) },
+          { header: "Product", accessor: (r: any) => r.name },
+          { header: "Category", accessor: (r: any) => r.category },
+          { header: "Qty Sold", accessor: (r: any) => String(r.qty) },
+          { header: "Revenue", accessor: (r: any) => formatPrice(r.revenue) },
+        ],
+      };
+    }
+
+    case "slow_moving_products": {
+      // Products with stock but very few sales (≤2)
+      const salesCount: Record<string, number> = {};
+      sales.forEach((s) => {
+        const prod = products.find((p) => p._id === s.productId);
+        if (prod) {
+          salesCount[prod.productTemplateId] = (salesCount[prod.productTemplateId] || 0) + 1;
+        }
+      });
+      const filtered = shopId ? products.filter((p) => p.shopId === shopId) : products;
+      const seen = new Set<string>();
+      const data = filtered
+        .filter((p) => p.quantity > 0)
+        .filter((p) => {
+          if (seen.has(p.productTemplateId)) return false;
+          seen.add(p.productTemplateId);
+          return (salesCount[p.productTemplateId] || 0) <= 2;
+        })
+        .map((p) => {
+          const tmpl = templates.find((t) => t._id === p.productTemplateId);
+          const cat = tmpl ? categories.find((c) => c._id === tmpl.productCategoryId) : null;
+          return {
+            product: tmpl?.name || "Unknown",
+            category: cat?.name || "Unknown",
+            stockQty: p.quantity,
+            totalSold: salesCount[p.productTemplateId] || 0,
+          };
+        })
+        .sort((a, b) => a.totalSold - b.totalSold);
+      return {
+        data,
+        columns: [
+          { header: "Product", accessor: (r: any) => r.product },
+          { header: "Category", accessor: (r: any) => r.category },
+          { header: "Current Stock", accessor: (r: any) => String(r.stockQty) },
+          { header: "Total Sold", accessor: (r: any) => String(r.totalSold) },
+        ],
+        summary: { "Slow Moving Items": String(data.length) },
+      };
+    }
+
+    case "dead_stock": {
+      const now = Date.now();
+      const DEAD_THRESHOLD_DAYS = 60;
+      // Products in stock that haven't been sold recently
+      const lastSaleMap: Record<string, number> = {};
+      getProductsSold().forEach((s) => {
+        const prod = products.find((p) => p._id === s.productId);
+        if (prod) {
+          lastSaleMap[prod.productTemplateId] = Math.max(
+            lastSaleMap[prod.productTemplateId] || 0,
+            s._creationTime
+          );
+        }
+      });
+      const filtered = shopId ? products.filter((p) => p.shopId === shopId) : products;
+      const seen = new Set<string>();
+      const data = filtered
+        .filter((p) => p.quantity > 0)
+        .filter((p) => {
+          if (seen.has(`${p.productTemplateId}_${p.shopId}`)) return false;
+          seen.add(`${p.productTemplateId}_${p.shopId}`);
+          const lastSale = lastSaleMap[p.productTemplateId];
+          const daysSinceLastSale = lastSale
+            ? Math.floor((now - lastSale) / (1000 * 60 * 60 * 24))
+            : 999;
+          return daysSinceLastSale >= DEAD_THRESHOLD_DAYS;
+        })
+        .map((p) => {
+          const tmpl = templates.find((t) => t._id === p.productTemplateId);
+          const cat = tmpl ? categories.find((c) => c._id === tmpl.productCategoryId) : null;
+          const shop = getShop(p.shopId);
+          const lastSale = lastSaleMap[p.productTemplateId];
+          const daysSince = lastSale
+            ? Math.floor((now - lastSale) / (1000 * 60 * 60 * 24))
+            : null;
+          const price = p.useDefaultPrice ? (tmpl?.priceInCents || 0) : (p.priceInCentsAtShop || 0);
+          return {
+            product: tmpl?.name || "Unknown",
+            category: cat?.name || "Unknown",
+            shop: shop?.name || p.shopId,
+            quantity: p.quantity,
+            value: p.quantity * price,
+            lastSold: daysSince !== null ? `${daysSince} days ago` : "Never sold",
+          };
+        })
+        .sort((a, b) => b.value - a.value);
+      const totalDeadValue = data.reduce((sum, d) => sum + d.value, 0);
+      return {
+        data,
+        columns: [
+          { header: "Product", accessor: (r: any) => r.product },
+          { header: "Category", accessor: (r: any) => r.category },
+          { header: "Shop", accessor: (r: any) => r.shop },
+          { header: "Qty", accessor: (r: any) => String(r.quantity) },
+          { header: "Value", accessor: (r: any) => formatPrice(r.value) },
+          { header: "Last Sold", accessor: (r: any) => r.lastSold },
+        ],
+        summary: { "Dead Stock Items": String(data.length), "Dead Stock Value": formatPrice(totalDeadValue) },
+      };
+    }
+
     default:
       return { data: [], columns: [] };
   }

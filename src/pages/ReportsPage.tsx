@@ -47,6 +47,9 @@ import {
   Clock,
   CheckCircle2,
   Trash2,
+  ArrowLeftRight,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
