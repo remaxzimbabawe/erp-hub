@@ -55,6 +55,7 @@ function AuthenticatedApp() {
          <Route path="/stock" element={<StockPage />} />
          <Route path="/stock-transfers" element={<StockTransfersPage />} />
          <Route path="/reports" element={<ReportsPage />} />
+         <Route path="/rewards" element={<RewardsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
