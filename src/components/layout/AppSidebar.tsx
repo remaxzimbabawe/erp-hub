@@ -31,6 +31,7 @@ import {
   BarChart3,
   ArrowLeftRight,
   ClipboardList,
+  Gift,
 } from "lucide-react";
 
 export function AppSidebar() {
