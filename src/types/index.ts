@@ -128,6 +128,11 @@ export interface Database {
   permissions: Permission[];
   auditLogs: AuditLog[];
   stockTransfers: StockTransfer[];
+  rewardsPrograms: RewardsProgram[];
+  rewardsTiers: RewardsTier[];
+  clientRewardsBalances: ClientRewardsBalance[];
+  rewardsCashouts: RewardsCashout[];
+  rewardsPointLogs: RewardsPointLog[];
 }
 
 export type StockTransferStatus = 'pending' | 'approved' | 'rejected' | 'completed';
