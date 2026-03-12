@@ -1,5 +1,6 @@
 import initialData from '@/data/data.json';
 import { initAuditLog, logAction } from './auditLog';
+import { initRewards } from './rewards';
 import type { 
   Database, 
   ProductCategory, 
