@@ -61,6 +61,22 @@ export const stockTransferSchema = z.object({
   notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
 });
 
+export const rewardsProgramSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+  description: z.string().max(500, 'Description must be less than 500 characters'),
+  minProductPriceInCents: z.number().min(100, 'Minimum price must be at least $1.00'),
+  thresholdAmountInCents: z.number().min(100, 'Threshold must be at least $1.00'),
+  pointsPerThreshold: z.number().int().min(1, 'Points must be at least 1'),
+  continuousAllocation: z.boolean(),
+});
+
+export const rewardsTierSchema = z.object({
+  programId: z.string().min(1, 'Program is required'),
+  pointsRequired: z.number().int().min(1, 'Points required must be at least 1'),
+  rewardName: z.string().trim().min(1, 'Reward name is required').max(100),
+  rewardValue: z.string().trim().min(1, 'Reward value is required').max(100),
+});
+
 export type ProductCategoryFormData = z.infer<typeof productCategorySchema>;
 export type ProductTemplateFormData = z.infer<typeof productTemplateSchema>;
 export type ShopFormData = z.infer<typeof shopSchema>;
@@ -71,3 +87,5 @@ export type CashierLoginFormData = z.infer<typeof cashierLoginSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type UserFormData = z.infer<typeof userFormSchema>;
 export type StockTransferFormData = z.infer<typeof stockTransferSchema>;
+export type RewardsProgramFormData = z.infer<typeof rewardsProgramSchema>;
+export type RewardsTierFormData = z.infer<typeof rewardsTierSchema>;
