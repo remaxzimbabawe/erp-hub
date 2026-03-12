@@ -93,5 +93,66 @@
     { "_id": "perm_15", "userId": "user_4", "permission": "view_dashboard", "shopId": "shop_1" }
   ],
   "auditLogs": [],
-  "stockTransfers": []
+  "stockTransfers": [],
+  "rewardsPrograms": [
+    {
+      "_id": "rwprog_1",
+      "_creationTime": 1704067200000,
+      "name": "Summer Points Blast",
+      "description": "Earn points on all products $1.50 and above",
+      "isActive": true,
+      "status": "active",
+      "minProductPriceInCents": 150,
+      "thresholdAmountInCents": 1000,
+      "pointsPerThreshold": 4,
+      "continuousAllocation": true,
+      "includedTemplateIds": ["temp_1", "temp_2", "temp_3", "temp_4", "temp_5", "temp_6", "temp_7", "temp_8", "temp_9", "temp_10"]
+    },
+    {
+      "_id": "rwprog_2",
+      "_creationTime": 1704067200000,
+      "name": "Premium Rewards Club",
+      "description": "Extra points for high-value purchases $5+",
+      "isActive": true,
+      "status": "active",
+      "minProductPriceInCents": 500,
+      "thresholdAmountInCents": 2000,
+      "pointsPerThreshold": 10,
+      "continuousAllocation": true,
+      "includedTemplateIds": ["temp_6", "temp_7", "temp_8", "temp_9", "temp_10"]
+    }
+  ],
+  "rewardsTiers": [
+    { "_id": "rwtier_1", "programId": "rwprog_1", "pointsRequired": 20, "rewardName": "Branded Pen", "rewardValue": "$2.00" },
+    { "_id": "rwtier_2", "programId": "rwprog_1", "pointsRequired": 50, "rewardName": "Tote Bag", "rewardValue": "$10.00" },
+    { "_id": "rwtier_3", "programId": "rwprog_1", "pointsRequired": 100, "rewardName": "$25 Store Credit", "rewardValue": "$25.00" },
+    { "_id": "rwtier_4", "programId": "rwprog_1", "pointsRequired": 500, "rewardName": "Smart Watch", "rewardValue": "$200.00" },
+    { "_id": "rwtier_5", "programId": "rwprog_2", "pointsRequired": 30, "rewardName": "Premium Notebook", "rewardValue": "$15.00" },
+    { "_id": "rwtier_6", "programId": "rwprog_2", "pointsRequired": 100, "rewardName": "$100 Cash Prize", "rewardValue": "$100.00" },
+    { "_id": "rwtier_7", "programId": "rwprog_2", "pointsRequired": 500, "rewardName": "Luxury Hamper", "rewardValue": "$500.00" }
+  ],
+  "clientRewardsBalances": [
+    { "_id": "rwbal_1", "clientId": "client_1", "programId": "rwprog_1", "currentPoints": 53, "totalPointsEarned": 73, "totalPointsCashedOut": 20 },
+    { "_id": "rwbal_2", "clientId": "client_2", "programId": "rwprog_1", "currentPoints": 28, "totalPointsEarned": 28, "totalPointsCashedOut": 0 },
+    { "_id": "rwbal_3", "clientId": "client_3", "programId": "rwprog_1", "currentPoints": 105, "totalPointsEarned": 105, "totalPointsCashedOut": 0 },
+    { "_id": "rwbal_4", "clientId": "client_3", "programId": "rwprog_2", "currentPoints": 45, "totalPointsEarned": 45, "totalPointsCashedOut": 0 },
+    { "_id": "rwbal_5", "clientId": "client_1", "programId": "rwprog_2", "currentPoints": 12, "totalPointsEarned": 12, "totalPointsCashedOut": 0 }
+  ],
+  "rewardsCashouts": [
+    {
+      "_id": "rwcash_1",
+      "_creationTime": 1706918400000,
+      "clientId": "client_1",
+      "programId": "rwprog_1",
+      "tierId": "rwtier_1",
+      "pointsRedeemed": 20,
+      "rewardName": "Branded Pen",
+      "processedBy": "user_1"
+    }
+  ],
+  "rewardsPointLogs": [
+    { "_id": "rwlog_1", "_creationTime": 1706659200000, "clientId": "client_1", "programId": "rwprog_1", "saleId": "sold_1", "pointsAwarded": 12, "qualifyingAmountInCents": 3200 },
+    { "_id": "rwlog_2", "_creationTime": 1706918400000, "clientId": "client_2", "programId": "rwprog_1", "saleId": "sold_7", "pointsAwarded": 28, "qualifyingAmountInCents": 7500 },
+    { "_id": "rwlog_3", "_creationTime": 1706745600000, "clientId": "client_3", "programId": "rwprog_1", "saleId": "sold_4", "pointsAwarded": 105, "qualifyingAmountInCents": 27000 }
+  ]
 }

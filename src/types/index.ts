@@ -128,6 +128,11 @@ export interface Database {
   permissions: Permission[];
   auditLogs: AuditLog[];
   stockTransfers: StockTransfer[];
+  rewardsPrograms: RewardsProgram[];
+  rewardsTiers: RewardsTier[];
+  clientRewardsBalances: ClientRewardsBalance[];
+  rewardsCashouts: RewardsCashout[];
+  rewardsPointLogs: RewardsPointLog[];
 }
 
 export type StockTransferStatus = 'pending' | 'approved' | 'rejected' | 'completed';
@@ -145,6 +150,61 @@ export type StockTransfer = {
   processedAt?: number;
   saleReference?: string; // links to ProductSold._id for cross-shop sales
   notes?: string;
+};
+
+// Rewards Program
+export type RewardsProgramStatus = 'active' | 'inactive' | 'retired';
+
+export type RewardsProgram = {
+  _id: string;
+  _creationTime: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+  status: RewardsProgramStatus;
+  minProductPriceInCents: number;
+  thresholdAmountInCents: number;
+  pointsPerThreshold: number;
+  continuousAllocation: boolean;
+  includedTemplateIds: string[];
+};
+
+export type RewardsTier = {
+  _id: string;
+  programId: string;
+  pointsRequired: number;
+  rewardName: string;
+  rewardValue: string;
+};
+
+export type ClientRewardsBalance = {
+  _id: string;
+  clientId: string;
+  programId: string;
+  currentPoints: number;
+  totalPointsEarned: number;
+  totalPointsCashedOut: number;
+};
+
+export type RewardsCashout = {
+  _id: string;
+  _creationTime: number;
+  clientId: string;
+  programId: string;
+  tierId: string;
+  pointsRedeemed: number;
+  rewardName: string;
+  processedBy: string;
+};
+
+export type RewardsPointLog = {
+  _id: string;
+  _creationTime: number;
+  clientId: string;
+  programId: string;
+  saleId: string;
+  pointsAwarded: number;
+  qualifyingAmountInCents: number;
 };
 
 // Cart item for POS

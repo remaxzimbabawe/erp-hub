@@ -31,6 +31,7 @@ import {
   BarChart3,
   ArrowLeftRight,
   ClipboardList,
+  Gift,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -81,6 +82,7 @@ export function AppSidebar() {
   }
   if (role === 'super_admin' || role === 'manager' || role === 'shop_manager') {
     managementNavItems.push({ title: "Reports", url: "/reports", icon: ClipboardList });
+    managementNavItems.push({ title: "Rewards", url: "/rewards", icon: Gift });
   }
 
   const adminNavItems: typeof mainNavItems = [];

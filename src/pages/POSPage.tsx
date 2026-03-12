@@ -10,8 +10,10 @@ import { getShops, getProducts, getProductsByShop, getProductTemplates, getProdu
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch, ShoppingCart } from "lucide-react";
+import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch, ShoppingCart, Gift } from "lucide-react";
 import type { Product, ProductTemplate, ProductCategory, Client, CartItem, SaleSummary } from "@/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getProductRewardsInfo, allocatePointsForSale, getActiveRewardsPrograms } from "@/lib/rewards";
 import { cn } from "@/lib/utils";
 
 export default function POSPage() {
@@ -181,6 +183,31 @@ export default function POSPage() {
       });
     });
 
+    // ── Rewards Point Allocation ──────────────
+    let rewardMsg = '';
+    if (selectedClient) {
+      const activePrograms = getActiveRewardsPrograms();
+      const amountByProgram = new Map<string, number>();
+      for (const prog of activePrograms) {
+        let qualifying = 0;
+        cart.forEach(item => {
+          if (prog.includedTemplateIds.includes(item.template._id)) {
+            qualifying += item.priceInCents * item.quantity;
+          }
+        });
+        if (qualifying > 0) amountByProgram.set(prog._id, qualifying);
+      }
+      if (amountByProgram.size > 0) {
+        const firstSaleId = `sale_${Date.now()}`;
+        const allocations = allocatePointsForSale(selectedClient._id, firstSaleId, amountByProgram);
+        if (allocations.length > 0) {
+          const a = allocations[0];
+          const progName = activePrograms.find(p => p._id === a.programId)?.name || '';
+          rewardMsg = ` | +${a.points} reward pts (${progName})`;
+        }
+      }
+    }
+
     const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName, shopId: shopId!, timestamp: Date.now() };
     setCurrentSale(sale);
     setLastSale(sale);
@@ -191,7 +218,7 @@ export default function POSPage() {
     const hasCrossShop = groupedCrossShop.size > 0;
     toast({ 
       title: "Sale completed!", 
-      description: `${formatPrice(cartTotal)}${hasCrossShop ? ` — ${groupedCrossShop.size} transfer order(s) created` : ''}` 
+      description: `${formatPrice(cartTotal)}${hasCrossShop ? ` — ${groupedCrossShop.size} transfer order(s) created` : ''}${rewardMsg}` 
     });
   };
 
@@ -231,7 +258,26 @@ export default function POSPage() {
                     <p className="text-xs text-muted-foreground">{category?.name}</p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm">{formatPrice(price)}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-sm">{formatPrice(price)}</span>
+                      {(() => {
+                        const rewardInfos = getProductRewardsInfo(product.productTemplateId);
+                        if (rewardInfos.length === 0) return null;
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Gift className="h-3.5 w-3.5 text-accent cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="font-semibold text-xs mb-1">Rewards Programs</p>
+                              {rewardInfos.map(ri => (
+                                <p key={ri.programId} className="text-xs">{ri.programName}: {ri.potentialPointsDesc}</p>
+                              ))}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })()}
+                    </div>
                     <Badge variant={isOutOfStock ? "destructive" : "secondary"} className="text-xs">{product.quantity}</Badge>
                   </div>
                 </div>

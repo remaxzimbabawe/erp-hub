@@ -1,5 +1,6 @@
 import initialData from '@/data/data.json';
 import { initAuditLog, logAction } from './auditLog';
+import { initRewards } from './rewards';
 import type { 
   Database, 
   ProductCategory, 
@@ -35,6 +36,11 @@ function loadDatabase(): Database {
       if (!db.permissions) db.permissions = (initialData as any).permissions || [];
       if (!db.auditLogs) db.auditLogs = [];
       if (!db.stockTransfers) db.stockTransfers = [];
+      if (!db.rewardsPrograms) db.rewardsPrograms = [];
+      if (!db.rewardsTiers) db.rewardsTiers = [];
+      if (!db.clientRewardsBalances) db.clientRewardsBalances = [];
+      if (!db.rewardsCashouts) db.rewardsCashouts = [];
+      if (!db.rewardsPointLogs) db.rewardsPointLogs = [];
       return db;
     } catch {
       return initialData as unknown as Database;
@@ -51,6 +57,8 @@ let database = loadDatabase();
 
 // Init audit log with access to db
 initAuditLog(() => ({ db: database, save: saveDatabase }));
+// Init rewards with access to db
+initRewards(() => ({ db: database, save: saveDatabase, generateId, currentUserId: () => _currentUserId }));
 
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
