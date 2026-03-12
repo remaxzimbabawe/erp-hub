@@ -602,6 +602,6 @@ export default function RewardsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageLayout>
+    </div>
   );
 }
