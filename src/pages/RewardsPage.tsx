@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageHeader } from "@/components/layout/PageLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
