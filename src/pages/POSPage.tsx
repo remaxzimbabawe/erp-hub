@@ -183,6 +183,31 @@ export default function POSPage() {
       });
     });
 
+    // ── Rewards Point Allocation ──────────────
+    let rewardMsg = '';
+    if (selectedClient) {
+      const activePrograms = getActiveRewardsPrograms();
+      const amountByProgram = new Map<string, number>();
+      for (const prog of activePrograms) {
+        let qualifying = 0;
+        cart.forEach(item => {
+          if (prog.includedTemplateIds.includes(item.template._id)) {
+            qualifying += item.priceInCents * item.quantity;
+          }
+        });
+        if (qualifying > 0) amountByProgram.set(prog._id, qualifying);
+      }
+      if (amountByProgram.size > 0) {
+        const firstSaleId = `sale_${Date.now()}`;
+        const allocations = allocatePointsForSale(selectedClient._id, firstSaleId, amountByProgram);
+        if (allocations.length > 0) {
+          const a = allocations[0];
+          const progName = activePrograms.find(p => p._id === a.programId)?.name || '';
+          rewardMsg = ` | +${a.points} reward pts (${progName})`;
+        }
+      }
+    }
+
     const sale: SaleSummary = { items: [...cart], total: cartTotal, client: selectedClient || undefined, cashierName, shopId: shopId!, timestamp: Date.now() };
     setCurrentSale(sale);
     setLastSale(sale);
@@ -193,7 +218,7 @@ export default function POSPage() {
     const hasCrossShop = groupedCrossShop.size > 0;
     toast({ 
       title: "Sale completed!", 
-      description: `${formatPrice(cartTotal)}${hasCrossShop ? ` — ${groupedCrossShop.size} transfer order(s) created` : ''}` 
+      description: `${formatPrice(cartTotal)}${hasCrossShop ? ` — ${groupedCrossShop.size} transfer order(s) created` : ''}${rewardMsg}` 
     });
   };
 
