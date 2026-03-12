@@ -233,7 +233,26 @@ export default function POSPage() {
                     <p className="text-xs text-muted-foreground">{category?.name}</p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm">{formatPrice(price)}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-sm">{formatPrice(price)}</span>
+                      {(() => {
+                        const rewardInfos = getProductRewardsInfo(product.productTemplateId);
+                        if (rewardInfos.length === 0) return null;
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Gift className="h-3.5 w-3.5 text-accent cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="font-semibold text-xs mb-1">Rewards Programs</p>
+                              {rewardInfos.map(ri => (
+                                <p key={ri.programId} className="text-xs">{ri.programName}: {ri.potentialPointsDesc}</p>
+                              ))}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })()}
+                    </div>
                     <Badge variant={isOutOfStock ? "destructive" : "secondary"} className="text-xs">{product.quantity}</Badge>
                   </div>
                 </div>
