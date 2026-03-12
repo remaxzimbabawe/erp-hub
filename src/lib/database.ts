@@ -36,6 +36,11 @@ function loadDatabase(): Database {
       if (!db.permissions) db.permissions = (initialData as any).permissions || [];
       if (!db.auditLogs) db.auditLogs = [];
       if (!db.stockTransfers) db.stockTransfers = [];
+      if (!db.rewardsPrograms) db.rewardsPrograms = [];
+      if (!db.rewardsTiers) db.rewardsTiers = [];
+      if (!db.clientRewardsBalances) db.clientRewardsBalances = [];
+      if (!db.rewardsCashouts) db.rewardsCashouts = [];
+      if (!db.rewardsPointLogs) db.rewardsPointLogs = [];
       return db;
     } catch {
       return initialData as unknown as Database;
