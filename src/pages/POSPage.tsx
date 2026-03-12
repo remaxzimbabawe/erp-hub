@@ -10,8 +10,10 @@ import { getShops, getProducts, getProductsByShop, getProductTemplates, getProdu
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch, ShoppingCart } from "lucide-react";
+import { Search, Plus, Minus, Trash2, User, ArrowRight, Printer, PackageSearch, ShoppingCart, Gift } from "lucide-react";
 import type { Product, ProductTemplate, ProductCategory, Client, CartItem, SaleSummary } from "@/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getProductRewardsInfo, allocatePointsForSale, getActiveRewardsPrograms } from "@/lib/rewards";
 import { cn } from "@/lib/utils";
 
 export default function POSPage() {
