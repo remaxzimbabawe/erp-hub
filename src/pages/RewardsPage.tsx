@@ -157,7 +157,8 @@ export default function RewardsPage() {
   });
 
   return (
-    <PageLayout title="Rewards Programs" description="Manage loyalty programs, tiers, and client points">
+    <div>
+      <PageHeader title="Rewards Programs" description="Manage loyalty programs, tiers, and client points" />
       <Tabs defaultValue="programs" className="space-y-4">
         <TabsList>
           <TabsTrigger value="programs"><Gift className="h-4 w-4 mr-1" />Programs</TabsTrigger>
